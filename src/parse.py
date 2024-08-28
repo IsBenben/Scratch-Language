@@ -1,10 +1,35 @@
 from tokens import TokenType, tokenize, Token
 from nodes import *
 from error import Error, raise_error
-from typing import Optional
+from typing import Optional, NoReturn, Any
+
+sign_to_english = {
+    '+': 'add',
+    '-': 'subtract',
+    '*': 'multiply',
+    '/': 'divide',
+    '%': 'mod',
+    '>': 'gt',
+    '<': 'lt',
+    '==': 'equals',
+    '!': 'not',
+    '||': 'or',
+    '&&': 'and',
+}
+reverse_sign = {
+    '>': '<',
+    '<': '>',
+}
+
+def extend_or_append(list_: list, value: list | Any):
+    if isinstance(value, list):
+        list_.extend(value)
+    else:
+        list_.append(value)
+    return list_
 
 class Parser:
-    def parse(self, code: str):
+    def parse(self, code: str) -> Program:
         return self.parse_program(tokenize(code))
     
     def eat(self, tokens: list[Token], type: Optional[TokenType]=None) -> Token:
@@ -12,14 +37,14 @@ class Parser:
             return tokens.pop(0)
         if tokens[0].type == type:
             return tokens.pop(0)
-        raise_error(Error('Parse', 'Unexpected token "{}", expected {}'.format(tokens[0].value, type)))
+        raise_error(Error('Parse', 'Unexpected token "{}", expected {}'.format(tokens[0].desc, type)))
 
     def parse_program(self, tokens: list[Token]) -> Program:
         program = Program()
         while tokens[0].type != TokenType.EOF:
             statement = self.parse_statement(tokens)
             if statement is not None:
-                program.body.append(statement)
+                extend_or_append(program.body, statement)
         return program
     
     def parse_block(self, tokens: list[Token]) -> Block:
@@ -28,29 +53,48 @@ class Parser:
         while tokens[0].type != TokenType.BLOCK_END:
             statement = self.parse_statement(tokens)
             if statement is not None:
-                block.body.append(statement)
+                extend_or_append(block.body, statement)
         self.eat(tokens, TokenType.BLOCK_END)
         return block
 
-    def parse_statement(self, tokens: list[Token]) -> Statement | None:
+    def parse_statement(self, tokens: list[Token]) -> Statement | list[Statement] | None:
         if tokens[0].type == TokenType.SEMICOLON:
             self.eat(tokens)
             return None
         if tokens[0].type == TokenType.BLOCK_START:
             return self.parse_block(tokens)
+        if tokens[0].type == TokenType.KEYWORD and tokens[0].value in ['var', 'const'] \
+                or (len(tokens) >= 2 and tokens[1].type == TokenType.ASSIGNMENT):
+            return self.parse_assignment(tokens)
+        if tokens[0].type == TokenType.KEYWORD and tokens[0].value == 'if':
+            return self.parse_if_statement(tokens)
         statement = self.parse_expression(tokens)
         self.eat(tokens, TokenType.SEMICOLON)
         return statement
     
     def parse_expression(self, tokens: list[Token]) -> Expression:
+        if len(tokens) >= 2 and tokens[1].type == TokenType.COMPARE:
+            if tokens[1].value in ['>=', '<=']:
+                return self.parse_comparison_expression(tokens)
         return self.parse_additive_expression(tokens)
     
+    def parse_comparison_expression(self, tokens):
+        left = self.parse_additive_expression(tokens)
+        operator = self.eat(tokens, TokenType.COMPARE).value
+        right = self.parse_additive_expression(tokens)
+        if operator in ['>=', '<=']:
+            # Syntactic sugar: a >= b
+            return FunctionCall('operator_' + sign_to_english['!'], [
+                FunctionCall('operator_' + sign_to_english[reverse_sign[operator]], [left, right])
+            ])
+        return FunctionCall('operator_' + sign_to_english[operator], [left, right])
+
     def parse_additive_expression(self, tokens: list[Token]) -> Expression:
         left = self.parse_multiplicative_expression(tokens)
         while tokens[0].type == TokenType.BINARY_OPERATOR and tokens[0].value in ['+', '-']:
             operator = self.eat(tokens).value
             right = self.parse_multiplicative_expression(tokens)
-            left = BinaryExpression(left, operator, right)
+            left = FunctionCall('operator_' + sign_to_english[operator], [left, right])
         return left
 
     def parse_multiplicative_expression(self, tokens: list[Token]) -> Expression:
@@ -58,7 +102,7 @@ class Parser:
         while tokens[0].type == TokenType.BINARY_OPERATOR and tokens[0].value in ['*', '/', '%']:
             operator = self.eat(tokens).value
             right = self.parse_factor(tokens)
-            left = BinaryExpression(left, operator, right)
+            left = FunctionCall('operator_' + sign_to_english[operator], [left, right])
         return left
     
     def parse_factor(self, tokens: list[Token]) -> Expression:
@@ -72,13 +116,12 @@ class Parser:
             return expression
         if tokens[0].type == TokenType.STRING:
             return String(self.eat(tokens).value)  # eat TokenType.STRING
-        if tokens[0].type == TokenType.NULL:
-            self.eat(tokens)  # eat TokenType.NULL
-            return Null()
         if len(tokens) >= 2 and tokens[0].type == TokenType.IDENTIFIER and tokens[1].type == TokenType.LEFT_PAREN:
             return self.parse_function_call(tokens)
+        if tokens[0].type == TokenType.IDENTIFIER:
+            return Identifier(self.eat(tokens).value)  # eat TokenType.STRING
         
-        raise_error(Error('Parse', 'Unexpected token "{}", expected a factor.'.format(tokens[0].value)))
+        raise_error(Error('Parse', 'Unexpected token "{}", expected a factor.'.format(tokens[0].desc)))
 
     def parse_function_call(self, tokens: list[Token]) -> FunctionCall:
         name = self.parse_identifier(tokens).name
@@ -95,10 +138,48 @@ class Parser:
     def parse_identifier(self, tokens: list[Token]) -> Identifier:
         if tokens[0].type == TokenType.IDENTIFIER:
             return Identifier(self.eat(tokens).value)
-        raise_error(Error('Parse', 'Unexpected token "{}", expected an identifier (letters, "_", or numbers (not start)).'.format(tokens[0].value)))
+        raise_error(Error('Parse', 'Unexpected token "{}", expected an identifier (letters, "_", or numbers (not start)).'.format(tokens[0].desc)))
 
-    def parse_assignment(self, tokens: list[Token]) -> Assignment:
+    def parse_assignment(self, tokens: list[Token]) -> FunctionCall | VariableDeclaration | list[Statement] | NoReturn:
+        is_declare = False
+        if tokens[0].type == TokenType.KEYWORD:
+            if tokens[0].value in ['const', 'var']:
+                is_declare = True
+                is_const = tokens[0].value == 'const'
+                self.eat(tokens)  # eat TokenType.KEYWORD
+            else:
+                raise_error(Error('Parse', 'Unexpected token "{}", expected "var", "const" or an identifier.'.format(tokens[0].desc)))
         identifier = self.parse_identifier(tokens)
-        self.eat(tokens, TokenType.ASSIGNMENT)
+        if tokens[0].type != TokenType.ASSIGNMENT:  # No assignment
+            if not is_declare:
+                # Example: NOT_DECLARED = 1;
+                raise_error(Error('Parse', 'Unexpected token "{}", expected an assignment or a variable declaration.'.format(tokens[0].desc)))
+            if is_const:
+                # Example: const SOME_CONST;
+                raise_error(Error('Parse', 'Unexpected token "{}", expected an assignment on a constant variable.'.format(tokens[0].desc)))
+            # Example: var SOME_VAR;
+            return VariableDeclaration(identifier.name, False)
+        if is_declare and tokens[0].value != '=':
+            raise_error(Error('Parse', 'Unexpected token "{}", expected "=" after variable declaration.'.format(tokens[0].desc)))
+        assignment_mode = self.eat(tokens).value  # eat TokenType.ASSIGNMENT
         expression = self.parse_expression(tokens)
-        return Assignment(identifier.name, expression)
+        if not is_declare:
+            if assignment_mode == '=':
+                return FunctionCall('data_setvariableto', [identifier, expression])
+            else:
+                return FunctionCall('data_setvariableto', [identifier, FunctionCall('operator_' + sign_to_english[assignment_mode[0]], [identifier, expression])])
+        if assignment_mode != '=':
+            raise_error(Error('Parse', 'Unexpected token "{}", expected "=" after variable declaration.'.format(tokens[0].desc)))
+        # Syntactic sugar: var SOME_VAR = 1;
+        return [
+            VariableDeclaration(identifier.name, is_const),  # var SOME_VAR;
+            FunctionCall('data_setvariableto', [identifier, expression])  # SOME_VAR = 1;
+        ]
+
+    def parse_if_statement(self, tokens: list[Token]) -> FunctionCall:
+        self.eat(tokens)  # eat TokenType.KEYWORD
+        self.eat(tokens, TokenType.LEFT_PAREN)
+        condition = self.parse_comparison_expression(tokens)
+        self.eat(tokens, TokenType.RIGHT_PAREN)
+        sub_stack = Block(self.parse_statement(tokens))
+        return FunctionCall('control_if', [condition, sub_stack])

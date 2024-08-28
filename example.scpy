@@ -1,0 +1,22 @@
+/*
+Powered by Scratch.py.
+*/
+
+var magical_number = 234; // 定义变量magical_number
+{
+    var magical_number = 114514; // 在另一个作用域定义同名变量
+    looks_sayforsecs(magical_number, 2);  // 说114514，2秒后消失
+    // 不影响外部作用域
+}
+magical_number -= 1;
+looks_sayforsecs(magical_number, 2);  // 说233，2秒后消失
+looks_sayforsecs(10 + 20, 2);  // 说10+20，2秒后消失
+looks_sayforsecs(7 % 3 * (10 + 30) / 5, 2);  // 说7%3*(10+30)/5，2秒后消失
+
+if (magical_number > 100) {
+    looks_sayforsecs("Greater than 100", 2);  // 说Greater than 100，2秒后消失
+    if (magical_number == 233) {
+        var magical_number = "233!!!";
+        looks_sayforsecs(magical_number, 2);  // 说233!!!，2秒后消失
+    }
+}
