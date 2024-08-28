@@ -4,28 +4,33 @@ from nodes import Block, NodeVisitor, String
 import json
 from values import *
 from utils import generate_id
+from dataclasses import dataclass
 
-BLOCK_TYPES: dict[str, dict[str, tuple]] = {
-    'looks_say': {'inputs': ('MESSAGE',)},
-    'looks_sayforsecs': {'inputs': ('MESSAGE', 'SECS')},
-    'operator_add': {'inputs': ('NUM1', 'NUM2')},
-    'operator_subtract': {'inputs': ('NUM1', 'NUM2')},
-    'operator_multiply': {'inputs': ('NUM1', 'NUM2')},
-    'operator_divide': {'inputs': ('NUM1', 'NUM2')},
-    'operator_mod': {'inputs': ('NUM1', 'NUM2')},
-    'operator_mod': {'inputs': ('NUM1', 'NUM2')},
-    'data_setvariableto': {'inputs': ('VALUE',), 'fields': ('VARIABLE',)},
-    'operator_and': {'inputs': ('OPERAND1', 'OPERAND2')},
-    'operator_or': {'inputs': ('OPERAND1', 'OPERAND2')},
-    'operator_not': {'inputs': ('OPERAND',)},
-    'control_if': {'inputs': ('CONDITION', 'SUBSTACK')},
-    'operator_gt': {'inputs': ('OPERAND1', 'OPERAND2')},
-    'operator_lt': {'inputs': ('OPERAND1', 'OPERAND2')},
-    'operator_equals': {'inputs': ('OPERAND1', 'OPERAND2')},
+@dataclass
+class BlockType:
+    inputs: tuple[str, ...] = ()
+    fields: tuple[str, ...] = ()
+    required: bool = True
+
+BLOCK_TYPES: dict[str, BlockType] = {
+    'looks_say': BlockType(inputs=('MESSAGE',)),
+    'looks_sayforsecs': BlockType(inputs=('MESSAGE', 'SECS')),
+    'operator_add': BlockType(inputs=('NUM1', 'NUM2')),
+    'operator_subtract': BlockType(inputs=('NUM1', 'NUM2')),
+    'operator_multiply': BlockType(inputs=('NUM1', 'NUM2')),
+    'operator_divide': BlockType(inputs=('NUM1', 'NUM2')),
+    'operator_mod': BlockType(inputs=('NUM1', 'NUM2')),
+    'data_setvariableto': BlockType(inputs=('VALUE',), fields=('VARIABLE',)),
+    'operator_and': BlockType(inputs=('OPERAND1', 'OPERAND2')),
+    'operator_or': BlockType(inputs=('OPERAND1', 'OPERAND2')),
+    'operator_not': BlockType(inputs=('OPERAND',), required=False),
+    'control_if': BlockType(inputs=('CONDITION', 'SUBSTACK')),
+    'control_if_else': BlockType(inputs=('CONDITION', 'SUBSTACK', 'SUBSTACK2')),
+    'operator_gt': BlockType(inputs=('OPERAND1', 'OPERAND2')),
+    'operator_lt': BlockType(inputs=('OPERAND1', 'OPERAND2')),
+    'operator_equals': BlockType(inputs=('OPERAND1', 'OPERAND2')),
+    'control_repeat_until': BlockType(inputs=('CONDITION', 'SUBSTACK')),
 }
-for value in BLOCK_TYPES.values():
-    value.setdefault('fields', ())
-    value.setdefault('inputs', ())
 
 class Interpreter(NodeVisitor):
     def __init__(self) -> None:
@@ -68,12 +73,14 @@ class Interpreter(NodeVisitor):
     def visit_Identifier(self, node) -> Variable:
         variable_record = self.record.resolve_variable(node.name)
         return Variable(
-            generate_id((variable_record, node.name)),
-            variable_record.variable_is_const[node.name]
+            node.name,
+            variable_record
         )
     
     def visit_VariableDeclaration(self, node) -> None:
         self.record.declare_variable(node.name, node.is_const)
+        variable_id = generate_id((self.record, node.name))
+        self.variables[variable_id] = [variable_id, '[NOT ASSIGNED]']
     
     def visit_String(self, node: String):
         return String(node.value)
@@ -111,18 +118,20 @@ class Interpreter(NodeVisitor):
             raise_error(Error('Interpret', f'Function {node.name} not defined'))
         fields, inputs = {}, {}
         bt = BLOCK_TYPES[node.name]  # block type
-        if len(node.args) < len(bt['fields'] + bt['inputs']):
+        if len(node.args) < len(bt.fields + bt.inputs) and bt.required:
             raise_error(Error('Interpret', f'Too few arguments in function {node.name}'))
         for i in range(len(node.args)):
-            arg_node = node.args[i]
-            arg = self.visit(arg_node)
-            if i < len(bt['fields']):
+            arg = self.visit(node.args[i])
+            if i < len(bt.fields):
                 if isinstance(arg, Variable):
-                    if arg.value[1]:  # is_const
-                        raise_error(Error('Interpret', 'Cannot set a constant variable'))
-                fields[bt['fields'][i]] = arg.get_id_name()
-            elif i < len(bt['fields'] + bt['inputs']):
-                arg_name = bt['inputs'][i - len(bt['fields'])]
+                    if arg.value[1].variable_is_const[arg.value[0]]:
+                        change_counts = arg.value[1].variable_change_counts
+                        change_counts[arg.value[0]] += 1
+                        if change_counts[arg.value[0]] == 2:
+                            raise_error(Error('Interpret', 'Cannot set a constant variable'))
+                fields[bt.fields[i]] = arg.get_id_name()
+            elif i < len(bt.fields + bt.inputs):
+                arg_name = bt.inputs[i - len(bt.fields)]
                 if 'STACK' in arg_name:
                     arg_value = arg.get_stack()
                 else:
