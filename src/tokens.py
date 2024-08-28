@@ -25,7 +25,7 @@ class TokenType(Enum):
 TOKEN_REGEX: dict[TokenType, re.Pattern | str] = {
     TokenType.COMMENT: re.compile(r'//[^\n\r]*|/\*.*?\*/', re.DOTALL),
     TokenType.WHITE: r'[ \t\n\r]+',
-    TokenType.KEYWORD: r'if|else|function|with',
+    TokenType.KEYWORD: r'const|var|if',
     TokenType.SEMICOLON: r'[;]',
     TokenType.LEFT_PAREN: r'\(',
     TokenType.RIGHT_PAREN: r'\)',
@@ -35,9 +35,9 @@ TOKEN_REGEX: dict[TokenType, re.Pattern | str] = {
     TokenType.NUMBER: r'[【1-9]\d*|0',
     TokenType.STRING: r'".*?"',
     TokenType.IDENTIFIER: r'[a-zA-Z_][a-zA-Z0-9_]*',
-    TokenType.ASSIGNMENT: r'=|+=|-=|\*=|/=|%=',
+    TokenType.COMPARE: r'==|!=|<|>|<=|>=',
+    TokenType.ASSIGNMENT: r'=|\+=|-=|\*=|/=|%=',
     TokenType.BINARY_OPERATOR: r'[+\-*/%]',
-    TokenType.COMPARE: r'==|!=|<|>|<=|>='
 }
 TOKEN_REGEX = {token_type: re.compile(pattern) if isinstance(pattern, str) else pattern for token_type, pattern in TOKEN_REGEX.items()}
 
@@ -45,22 +45,33 @@ TOKEN_REGEX = {token_type: re.compile(pattern) if isinstance(pattern, str) else 
 class Token:
     type: TokenType
     value: str
+    lineno: Optional[int] = None
+
+    @property
+    def desc(self):
+        if self.lineno is None:
+            return self.value
+        return f'{self.value} (line {self.lineno})'
 
 def tokenize(code: str) -> list[Token]:
     tokens = []
     match: Optional[re.Match] = None
+    lineno = 1
     while code:
         for token_type, pattern in TOKEN_REGEX.items():
             match = re.match(pattern, code)
             if not match:
                 continue
             code = code[match.end():]
-            if token_type == TokenType.WHITE or token_type == TokenType.COMMENT:
-                break
             value = match.group()
+            lineno += value.count('\n')
+            if token_type == TokenType.COMMENT:
+                break
+            if token_type == TokenType.WHITE:
+                break
             if token_type == token_type.STRING:
                 value = value[1:-1]
-            tokens.append(Token(token_type, value))
+            tokens.append(Token(token_type, value, lineno))
             break
         if not match:
             raise_error(Error('Tokenize', 'Invalid or unexpected token on "{}".'.format(code[:5])))

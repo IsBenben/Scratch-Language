@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 INDENT = ' |  '
 
 class Node:
@@ -17,8 +19,14 @@ class Statement(Node):
         return indent + 'Statement {N/A}\n'
 
 class Block(Statement):
-    def __init__(self):
-        self.body: list[Statement] = []
+    def __init__(self, body: None | list[Statement] | Statement | Block = None):
+        if isinstance(body, Block):
+            body = body.body
+        if body is None:
+            body = []
+        if isinstance(body, Statement):
+            body = [body]
+        self.body: list[Statement] = body
     
     def dump(self, indent=''):
         result = indent + 'Block {\n'
@@ -36,20 +44,6 @@ class Program(Block):
 class Expression(Statement):
     def dump(self, indent=''):
         return indent + 'Expression {N/A}\n'
-
-class BinaryExpression(Expression):
-    def __init__(self, left: Expression, operator: str, right: Expression):
-        self.left: Expression = left
-        self.operator: str = operator
-        self.right: Expression = right
-    
-    def dump(self, indent=''):
-        result = indent + 'BinaryExpressionExpression {\n'
-        result += self.left.dump(indent + INDENT)
-        result += indent + INDENT + '[str] ' + self.operator + '\n'
-        result += self.right.dump(indent + INDENT)
-        result += indent + '}\n'
-        return result
 
 class Factor(Expression):
     def dump(self, indent=''):
@@ -77,9 +71,9 @@ class Identifier(Factor):
         return indent + 'Identifier ' + self.name + '\n'
 
 class FunctionCall(Factor):
-    def __init__(self, name: str, args: list[Expression]):
+    def __init__(self, name: str, args: list[Statement]):
         self.name: str = name
-        self.args: list[Expression] = args
+        self.args: list[Statement] = args
     
     def dump(self, indent=''):
         result = indent + 'FunctionCall {\n'
@@ -87,20 +81,20 @@ class FunctionCall(Factor):
         result += Node.dump_list(self.args, indent + INDENT)
         result += indent + '}\n'
         return result
-        
-class Assignment(Statement):
-    def __init__(self, name: str, value: Expression):
+
+class VariableDeclaration(Statement):
+    def __init__(self, name: str, is_const: bool):
         self.name: str = name
-        self.value: Expression = value
+        self.is_const: bool = is_const
     
     def dump(self, indent=''):
-        result = indent + 'Assignment {\n'
+        result = indent + 'VariableDeclaration {\n'
         result += indent + INDENT + '[str] ' + self.name + '\n'
-        result += self.value.dump(indent + INDENT)
+        result += indent + INDENT + '[bool] ' + str(self.is_const) + '\n'
         result += indent + '}\n'
 
 class NodeVisitor:
-    def visit(self, node):
+    def visit(self, node: Node):
         return getattr(self, 'visit_' + type(node).__name__, self.visit_error)(node)
     
     def visit_Statement(self, node: Statement):
@@ -115,10 +109,6 @@ class NodeVisitor:
 
     def visit_Expression(self, node: Expression):
         pass
-    
-    def visit_BinaryExpression(self, node: BinaryExpression):
-        self.visit(node.left)
-        self.visit(node.right)
     
     def visit_Factor(self, node: Factor):
         pass
@@ -136,8 +126,8 @@ class NodeVisitor:
         for arg in node.args:
             self.visit(arg)
 
-    def visit_Assignment(self, node: Assignment):
-        self.visit(node.value)
+    def visit_VariableDeclaration(self, node: VariableDeclaration):
+        pass
 
     def visit_error(self, node: Node):
         raise TypeError(f'Method visit_{type(node).__name__} is not defined.')

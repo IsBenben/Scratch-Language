@@ -3,7 +3,7 @@
     {
       "isStage": true,
       "name": "Stage",
-      "variables": { "`jEk@4|i[#Fk?(8x)AV.-my variable": ["我的变量", 0] },
+      "variables": {},
       "lists": {},
       "broadcasts": {},
       "blocks": {},
@@ -33,28 +33,7 @@
       "variables": {},
       "lists": {},
       "broadcasts": {},
-      "blocks": {
-        "a": {
-          "opcode": "event_whenflagclicked",
-          "next": "b",
-          "parent": null,
-          "inputs": {},
-          "fields": {},
-          "shadow": false,
-          "topLevel": true,
-          "x": 542,
-          "y": 188
-        },
-        "b": {
-          "opcode": "looks_say",
-          "next": null,
-          "parent": "a",
-          "inputs": { "MESSAGE": [1, [10, "【print】"]] },
-          "fields": {},
-          "shadow": false,
-          "topLevel": false
-        }
-      },
+      "blocks": {},
       "comments": {},
       "currentCostume": 0,
       "costumes": [
@@ -86,6 +65,9 @@
     "semver": "3.0.0",
     "vm": "0.2.0",
     "agent": "",
-    "platform": { "name": "Scratch.py", "url": "https://github.com/IsBenben/Scratch.py" }
+    "platform": {
+      "name": "Scratch.py",
+      "url": "https://github.com/IsBenben/Scratch.py"
+    }
   }
 }
