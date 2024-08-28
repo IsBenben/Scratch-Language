@@ -25,7 +25,7 @@ class TokenType(Enum):
 TOKEN_REGEX: dict[TokenType, re.Pattern | str] = {
     TokenType.COMMENT: re.compile(r'//[^\n\r]*|/\*.*?\*/', re.DOTALL),
     TokenType.WHITE: r'[ \t\n\r]+',
-    TokenType.KEYWORD: r'const|var|if',
+    TokenType.KEYWORD: r'const|var|if|else|while|until|true|false',
     TokenType.SEMICOLON: r'[;]',
     TokenType.LEFT_PAREN: r'\(',
     TokenType.RIGHT_PAREN: r'\)',
@@ -35,7 +35,7 @@ TOKEN_REGEX: dict[TokenType, re.Pattern | str] = {
     TokenType.NUMBER: r'[【1-9]\d*|0',
     TokenType.STRING: r'".*?"',
     TokenType.IDENTIFIER: r'[a-zA-Z_][a-zA-Z0-9_]*',
-    TokenType.COMPARE: r'==|!=|<|>|<=|>=',
+    TokenType.COMPARE: r'==|!=|<=|>=|<|>',
     TokenType.ASSIGNMENT: r'=|\+=|-=|\*=|/=|%=',
     TokenType.BINARY_OPERATOR: r'[+\-*/%]',
 }

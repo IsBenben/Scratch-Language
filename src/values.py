@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, NoReturn
 from error import Error, raise_error
+from records import Record
 from utils import generate_id
 
 @dataclass
@@ -53,13 +54,17 @@ class Integer(Value):
         return [1, [4, str(self.value)]]
     
 class Variable(Value):
-    value: tuple  # (id: str, is_const: bool)
+    value: tuple  # (name: str, record: Record)
 
-    def __init__(self, id: str, is_const: bool = False):
-        super().__init__((id, is_const))
+    def __init__(self, name: str, record: Record):
+        super().__init__((name, record))
+
+    @property
+    def id(self) -> str:
+        return generate_id((self.value[0], self.value[1]))
 
     def get_id_name(self) -> list[str]:
-        return [self.value[0], self.value[0]]
+        return [self.id, self.id]
 
     def get_value(self) -> list:
-        return [3, [12, self.value[0], self.value[0]], EMPTY_STRING.get_id_name()]
+        return [3, [12, self.id, self.id], EMPTY_STRING.get_id_name()]
