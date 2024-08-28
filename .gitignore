@@ -2,6 +2,6 @@ __pycache__
 .vscode
 .idea
 tests
-*output*
+output*
 tempCodeRunnerFile.*
 project.json
