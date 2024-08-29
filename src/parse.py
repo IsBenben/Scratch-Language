@@ -63,13 +63,19 @@ class Parser:
             return None
         if tokens[0].type == TokenType.BLOCK_START:
             return self.parse_block(tokens)
-        if tokens[0].type == TokenType.KEYWORD and tokens[0].value in ['var', 'const'] \
-                or (len(tokens) >= 2 and tokens[1].type == TokenType.ASSIGNMENT):
+        if len(tokens) >= 2 and tokens[1].type == TokenType.ASSIGNMENT:
             return self.parse_assignment(tokens)
-        if tokens[0].type == TokenType.KEYWORD and tokens[0].value == 'if':
-            return self.parse_if_statement(tokens)
-        if tokens[0].type == TokenType.KEYWORD and tokens[0].value in ['while', 'until']:
-            return self.parse_repeat_statement(tokens)
+        
+        if tokens[0].type == TokenType.KEYWORD:
+            keyword = tokens[0].value
+            if keyword in ['var', 'const']:
+                return self.parse_assignment(tokens)
+            if keyword == 'if':
+                return self.parse_if_statement(tokens)
+            if keyword in ['while', 'until']:
+                return self.parse_repeat_statement(tokens)
+            if keyword == 'function':
+                return self.parse_function_declaration(tokens)
         statement = self.parse_expression(tokens)
         self.eat(tokens, TokenType.SEMICOLON)
         return statement
@@ -88,7 +94,7 @@ class Parser:
                     return FunctionCall('operator_not', [])  # not() -> true
                 return FunctionCall('operator_not', [FunctionCall('operator_not', [])])  # not(true) -> false
             else:
-                raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected keyword "true" or "false".'))
+                raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected keyword "true" or "false"'))
         left = self.parse_additive_expression(tokens)
         operator = self.eat(tokens, TokenType.COMPARE).value
         right = self.parse_additive_expression(tokens)
@@ -131,7 +137,7 @@ class Parser:
         if tokens[0].type == TokenType.IDENTIFIER:
             return Identifier(self.eat(tokens).value)  # eat TokenType.STRING
         
-        raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected a factor.'))
+        raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected a factor'))
 
     def parse_function_call(self, tokens: list[Token]) -> FunctionCall:
         name = self.parse_identifier(tokens).name
@@ -148,7 +154,7 @@ class Parser:
     def parse_identifier(self, tokens: list[Token]) -> Identifier:
         if tokens[0].type == TokenType.IDENTIFIER:
             return Identifier(self.eat(tokens).value)
-        raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected an identifier (letters, "_", or numbers (not start)).'))
+        raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected an identifier (letters, "_", or numbers (not start))'))
 
     def parse_assignment(self, tokens: list[Token]) -> FunctionCall | VariableDeclaration | list[Statement] | NoReturn:
         is_declare = False
@@ -158,19 +164,19 @@ class Parser:
                 is_const = tokens[0].value == 'const'
                 self.eat(tokens)  # eat TokenType.KEYWORD
             else:
-                raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "var", "const" or an identifier.'))
+                raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "var", "const" or an identifier'))
         identifier = self.parse_identifier(tokens)
         if tokens[0].type != TokenType.ASSIGNMENT:  # No assignment
             if not is_declare:
                 # Example: NOT_DECLARED = 1;
-                raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected an assignment or a variable declaration.'))
+                raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected an assignment or a variable declaration'))
             if is_const:
                 # Example: const SOME_CONST;
-                raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected an assignment on a constant variable.'))
+                raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected an assignment on a constant variable'))
             # Example: var SOME_VAR;
             return VariableDeclaration(identifier.name, False)
         if is_declare and tokens[0].value != '=':
-            raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "=" after variable declaration.'))
+            raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "=" after variable declaration'))
         assignment_mode = self.eat(tokens).value  # eat TokenType.ASSIGNMENT
         expression = self.parse_expression(tokens)
         if not is_declare:
@@ -179,7 +185,7 @@ class Parser:
             else:
                 return FunctionCall('data_setvariableto', [identifier, FunctionCall('operator_' + sign_to_english[assignment_mode[0]], [identifier, expression])])
         if assignment_mode != '=':
-            raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "=" after variable declaration.'))
+            raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "=" after variable declaration'))
         # Syntactic sugar: var SOME_VAR = 1;
         return [
             VariableDeclaration(identifier.name, is_const),  # var SOME_VAR;
@@ -208,3 +214,17 @@ class Parser:
         self.eat(tokens, TokenType.RIGHT_PAREN)
         sub_stack = Block(self.parse_statement(tokens))
         return FunctionCall('control_repeat_until', [condition, sub_stack])
+
+    def parse_function_declaration(self, tokens: list[Token]) -> FunctionDeclaration:
+        self.eat(tokens)  # eat TokenType.KEYWORD
+        name = self.parse_identifier(tokens).name
+        self.eat(tokens, TokenType.LEFT_PAREN)
+        params = []
+        if tokens[0].type != TokenType.RIGHT_PAREN:
+            params.append(self.parse_identifier(tokens).name)
+            while tokens[0].type == TokenType.COMMA:
+                self.eat(tokens)  # eat TokenType.COMMA
+                params.append(self.parse_identifier(tokens).name)
+        self.eat(tokens, TokenType.RIGHT_PAREN)
+        sub_stack = Block(self.parse_statement(tokens))
+        return FunctionDeclaration(name, params, sub_stack)

@@ -1,7 +1,0 @@
-/*
-Powered by Scratch.py.
-*/
-
-var a = 1;
-const secs = 1;
-looks_sayforsecs(a, secs);
