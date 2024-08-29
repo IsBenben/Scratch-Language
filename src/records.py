@@ -52,17 +52,24 @@ class Record:
             return self.parent.resolve_variable(name)
         raise_error(Error('Record', f'Variable "{name}" not declared'))
     
-    def has_function(self, name: str) -> bool:
-        # Try find the function, if found, return True, else return False
-        if name in self.functions:
-            return True
-        if self.parent is not None:
-            return self.parent.has_function(name)
-        return False
-    
     def resolve_function(self, name: str) -> Record:
         if name in self.functions:
             return self
         if self.parent is not None:
             return self.parent.resolve_function(name)
         raise_error(Error('Record', f'Function "{name}" not declared'))
+    
+    def has_variable(self, name: str) -> bool:
+        # Try find the variable, if found, return True, else return False
+        if name in self.variables:
+            return True
+        if self.parent is not None:
+            return self.parent.has_variable(name)
+        return False
+
+    def has_function(self, name: str) -> bool:
+        if name in self.functions:
+            return True
+        if self.parent is not None:
+            return self.parent.has_function(name)
+        return False

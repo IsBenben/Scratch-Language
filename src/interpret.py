@@ -2,10 +2,11 @@ from dataclasses import dataclass
 from error import Error, raise_error
 from nodes import Block, NodeVisitor, FunctionDeclaration
 from records import Record
-from typing import Optional
+from typing import Optional, Literal
 from utils import generate_id
 from values import *
 import json
+import math
 
 def json_with_settings(dump_fn, *args, **kwargs):
     return dump_fn(*args, **kwargs, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
@@ -13,30 +14,53 @@ def json_with_settings(dump_fn, *args, **kwargs):
 PRO = 'procedure_'
 
 @dataclass
-class BlockType:
-    inputs: tuple[str, ...] = ()
-    fields: tuple[str, ...] = ()
+class Input:
+    name: str
+    type: Literal['normal', 'boolean', 'block'] = 'normal'
     required: bool = True
 
+@dataclass
+class BlockType:
+    inputs: tuple[Input, ...] = ()
+    fields: tuple[Input, ...] = ()
+
+    def __init__(self, inputs=(), fields=()):
+        _process = lambda x: tuple(map(lambda y: (Input(y) if not isinstance(y, Input) else y), x))
+        self.inputs = _process(inputs)
+        self.fields = _process(fields)
+    
+    @property
+    def required_arguments_count(self):
+        _process = lambda x: len(list(filter(lambda y: y.required, x)))
+        return _process(self.fields) + _process(self.inputs)
+
 BLOCK_TYPES: dict[str, BlockType] = {
+    'control_if': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
+                                    Input(name='SUBSTACK', type='block'))),
+    'control_if_else': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
+                                         Input(name='SUBSTACK', type='block'),
+                                         Input(name='SUBSTACK2', type='block'))),
+    'control_repeat_until': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
+                                              Input(name='SUBSTACK', type='block'))),
+    'control_wait': BlockType(inputs=('DURATION',)),
+    'data_changevariableby': BlockType(inputs=('VALUE',), fields=('VARIABLE',)),
+    'data_setvariableto': BlockType(inputs=('VALUE',), fields=('VARIABLE',)),
     'looks_say': BlockType(inputs=('MESSAGE',)),
     'looks_sayforsecs': BlockType(inputs=('MESSAGE', 'SECS')),
     'operator_add': BlockType(inputs=('NUM1', 'NUM2')),
-    'operator_subtract': BlockType(inputs=('NUM1', 'NUM2')),
-    'operator_multiply': BlockType(inputs=('NUM1', 'NUM2')),
+    'operator_and': BlockType(inputs=(Input(name='OPERAND1', type='boolean'),
+                                      Input(name='OPERAND2', type='boolean'))),
     'operator_divide': BlockType(inputs=('NUM1', 'NUM2')),
-    'operator_mod': BlockType(inputs=('NUM1', 'NUM2')),
-    'data_setvariableto': BlockType(inputs=('VALUE',), fields=('VARIABLE',)),
-    'operator_and': BlockType(inputs=('OPERAND1', 'OPERAND2')),
-    'operator_or': BlockType(inputs=('OPERAND1', 'OPERAND2')),
-    'operator_not': BlockType(inputs=('OPERAND',), required=False),
-    'control_if': BlockType(inputs=('CONDITION', 'SUBSTACK')),
-    'control_if_else': BlockType(inputs=('CONDITION', 'SUBSTACK', 'SUBSTACK2')),
-    'operator_gt': BlockType(inputs=('OPERAND1', 'OPERAND2')),
-    'operator_lt': BlockType(inputs=('OPERAND1', 'OPERAND2')),
     'operator_equals': BlockType(inputs=('OPERAND1', 'OPERAND2')),
-    'control_repeat_until': BlockType(inputs=('CONDITION', 'SUBSTACK')),
-    'control_wait': BlockType(inputs=('DURATION',))
+    'operator_gt': BlockType(inputs=('OPERAND1', 'OPERAND2')),
+    'operator_join': BlockType(inputs=('STRING1', 'STRING2')),
+    'operator_lt': BlockType(inputs=('OPERAND1', 'OPERAND2')),
+    'operator_mod': BlockType(inputs=('NUM1', 'NUM2')),
+    'operator_multiply': BlockType(inputs=('NUM1', 'NUM2')),
+    'operator_not': BlockType(inputs=(Input(name='OPERAND', type='boolean', required=False),)),
+    'operator_or': BlockType(inputs=(Input(name='OPERAND1', type='boolean'),
+                                     Input(name='OPERAND2', type='boolean'))),
+    'operator_subtract': BlockType(inputs=('NUM1', 'NUM2')),
 }
 
 class Interpreter(NodeVisitor):
@@ -86,7 +110,22 @@ class Interpreter(NodeVisitor):
             return None
         return BlockList((start_id, end_id))
 
-    def visit_Identifier(self, node) -> Variable | Block:
+    def visit_Identifier(self, node) -> Variable | Block | String | Number | NoReturn:
+        if not self.record.has_variable(node.name):
+            magic_number = {
+                'e': math.e,
+                'pi': math.pi,
+            }
+            special_values = {
+                'nan': 'NaN',
+                'inf': 'Infinity',
+            }
+            if node.name in special_values:
+                return String(special_values[node.name])
+            elif node.name in magic_number:
+                return Number(magic_number[node.name])
+            raise_error(Error('Interpret', f'Variable {node.name} not declared'))
+        
         variable_record = self.record.resolve_variable(node.name)
         variable = variable_record.variables[node.name]
         if variable.type == 'variable':
@@ -139,8 +178,8 @@ class Interpreter(NodeVisitor):
                 raise_error(Error('Interpret', 'Invalid statement'))
         return Block(event_id)
 
-    def visit_Number(self, node) -> Integer:
-        return Integer(node.value)
+    def visit_Number(self, node) -> Number:
+        return Number(node.value)
 
     def visit_FunctionCall(self, node) -> Block:
         if self.record.has_function(node.name):
@@ -174,7 +213,7 @@ class Interpreter(NodeVisitor):
                 if isinstance(arg, Block):
                     self.blocks[arg.get_start_end()[0]]['parent'] = call_id
                 arg_name = arg_ids[i]
-                arg_value = arg.get_value()
+                arg_value = arg.get_as_normal()
                 inputs[arg_name] = arg_value
             else:
                 raise_error(Error('Interpret', f'Too many arguments in function {node.name}'))
@@ -197,7 +236,7 @@ class Interpreter(NodeVisitor):
             # if cannot find the function in built-in functions, raise an error
             raise_error(Error('Interpret', f'Function {node.name} not declared'))
         bt = BLOCK_TYPES[node.name]  # block type
-        if len(node.args) < len(bt.fields + bt.inputs) and bt.required:
+        if len(node.args) < bt.required_arguments_count:
             raise_error(Error('Interpret', f'Too few arguments in function {node.name}'))
         fields, inputs = {}, {}
         for i in range(len(node.args)):
@@ -216,18 +255,22 @@ class Interpreter(NodeVisitor):
                         # Second change: raise an error
                         if variable.change_counts >= 2:
                             raise_error(Error('Interpret', 'Cannot set a constant variable'))
-                fields[bt.fields[i]] = arg.get_id_name()
+                fields[bt.fields[i].name] = arg.get_as_field()
             elif i < len(bt.fields + bt.inputs):
                 # Set a block parent
                 if isinstance(arg, Block):
                     self.blocks[arg.get_start_end()[0]]['parent'] = call_id
 
-                arg_name = bt.inputs[i - len(bt.fields)]
-                if 'STACK' in arg_name:
-                    arg_value = arg.get_stack()
+                arg_type = bt.inputs[i - len(bt.fields)]
+                if arg_type.type == 'block':
+                    arg_value = arg.get_as_block()
+                elif arg_type.type == 'normal':
+                    arg_value = arg.get_as_normal()
+                elif arg_type.type == 'boolean':
+                    arg_value = arg.get_as_boolean()
                 else:
-                    arg_value = arg.get_value()
-                inputs[arg_name] = arg_value
+                    raise ValueError(f'Invalid argument type {arg_type.type}')
+                inputs[arg_type.name] = arg_value
             else:
                 raise_error(Error('Interpret', f'Too many arguments in function {node.name}'))
         self.blocks[call_id] = {

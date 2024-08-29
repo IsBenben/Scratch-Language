@@ -6,18 +6,18 @@ from error import Error, raise_error
 
 class TokenType(Enum):
     ASSIGNMENT = auto()
-    BINARY_OPERATOR = auto()
+    OPERATOR = auto()
     BLOCK_END = auto()
     BLOCK_START = auto()
     COMMA = auto()
     COMMENT = auto()
     COMPARE = auto()
     EOF = auto()
+    FLOAT = auto()
     IDENTIFIER = auto()
+    INTEGER = auto()
     KEYWORD = auto()
     LEFT_PAREN = auto()
-    LOGIC_OPERATOR = auto()
-    NUMBER = auto()
     RIGHT_PAREN = auto()
     SEMICOLON = auto()
     STRING = auto()
@@ -33,14 +33,14 @@ TOKEN_REGEX: dict[TokenType, re.Pattern | str] = {
     TokenType.BLOCK_START: r'\{',
     TokenType.BLOCK_END: r'\}',
     TokenType.COMMA: r',',
-    TokenType.NUMBER: r'[1-9]\d*|0',
+    TokenType.FLOAT: r'[1-9]\d*\.\d*|0?\.\d+',
+    TokenType.INTEGER: r'0b[0-1]+|0o[0-7]+|0x[0-9a-fA-F]+|[1-9]\d*|0',
     TokenType.STRING: r'".*?"',
     # \u4e00 - \u9fa5 is the unicode range of Chinese characters
     TokenType.IDENTIFIER: r'[a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*',
     TokenType.COMPARE: r'==|!=|<=|>=|<|>',
     TokenType.ASSIGNMENT: r'=|\+=|-=|\*=|/=|%=',
-    TokenType.LOGIC_OPERATOR: r'\|\||&&',
-    TokenType.BINARY_OPERATOR: r'[+\-*/%]|\.\.',
+    TokenType.OPERATOR: r'[+\-*/%]|\.{2}|!|\|\||&&',
 }
 # Change the string to regex pattern
 TOKEN_REGEX = {token_type: re.compile(pattern) if isinstance(pattern, str) else pattern for token_type, pattern in TOKEN_REGEX.items()}
