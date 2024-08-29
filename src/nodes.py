@@ -93,6 +93,20 @@ class VariableDeclaration(Statement):
         result += indent + INDENT + '[bool] ' + str(self.is_const) + '\n'
         result += indent + '}\n'
 
+class FunctionDeclaration(Statement):
+    def __init__(self, name: str, args: list[str], body: Block):
+        self.name: str = name
+        self.args: list[str] = args
+        self.body: Block = body
+    
+    def dump(self, indent=''):
+        result = indent + 'FunctionDeclaration {\n'
+        result += indent + INDENT + '[str] ' + self.name + '\n'
+        result += self.dump_list(self.args, indent + INDENT)
+        result += self.body.dump(indent + INDENT)
+        result += indent + '}\n'
+        return result
+
 class NodeVisitor:
     def visit(self, node: Node):
         return getattr(self, 'visit_' + type(node).__name__, self.visit_error)(node)
@@ -101,11 +115,10 @@ class NodeVisitor:
         pass
 
     def visit_Block(self, node: Block):
-        for statement in node.body:
-            self.visit(statement)
+        pass
 
     def visit_Program(self, node: Program):
-        self.visit_Block(node)
+        pass
 
     def visit_Expression(self, node: Expression):
         pass
@@ -114,20 +127,22 @@ class NodeVisitor:
         pass
 
     def visit_Number(self, node: Number):
-        return node.value
+        pass
     
     def visit_String(self, node: String):
-        return node.value
+        pass
 
     def visit_Identifier(self, node: Identifier):
-        return node.name
+        pass
     
     def visit_FunctionCall(self, node: FunctionCall):
-        for arg in node.args:
-            self.visit(arg)
+        pass
 
     def visit_VariableDeclaration(self, node: VariableDeclaration):
         pass
 
+    def visit_FunctionDeclaration(self, node: FunctionDeclaration):
+        pass
+
     def visit_error(self, node: Node):
-        raise TypeError(f'Method visit_{type(node).__name__} is not defined.')
+        raise TypeError(f'Method visit_{type(node).__name__} is not defined')

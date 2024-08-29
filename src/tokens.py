@@ -16,6 +16,7 @@ class TokenType(Enum):
     IDENTIFIER = auto()
     KEYWORD = auto()
     LEFT_PAREN = auto()
+    LOGIC_OPERATOR = auto()
     NUMBER = auto()
     RIGHT_PAREN = auto()
     SEMICOLON = auto()
@@ -25,20 +26,23 @@ class TokenType(Enum):
 TOKEN_REGEX: dict[TokenType, re.Pattern | str] = {
     TokenType.COMMENT: re.compile(r'//[^\n\r]*|/\*.*?\*/', re.DOTALL),
     TokenType.WHITE: r'[ \t\n\r]+',
-    TokenType.KEYWORD: r'const|var|if|else|while|until|true|false',
-    TokenType.SEMICOLON: r'[;]',
+    TokenType.KEYWORD: r'const|var|if|else|while|until|true|false|function|return',
+    TokenType.SEMICOLON: r';',
     TokenType.LEFT_PAREN: r'\(',
     TokenType.RIGHT_PAREN: r'\)',
     TokenType.BLOCK_START: r'\{',
     TokenType.BLOCK_END: r'\}',
     TokenType.COMMA: r',',
-    TokenType.NUMBER: r'[【1-9]\d*|0',
+    TokenType.NUMBER: r'[1-9]\d*|0',
     TokenType.STRING: r'".*?"',
-    TokenType.IDENTIFIER: r'[a-zA-Z_][a-zA-Z0-9_]*',
+    # \u4e00 - \u9fa5 is the unicode range of Chinese characters
+    TokenType.IDENTIFIER: r'[a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*',
     TokenType.COMPARE: r'==|!=|<=|>=|<|>',
     TokenType.ASSIGNMENT: r'=|\+=|-=|\*=|/=|%=',
-    TokenType.BINARY_OPERATOR: r'[+\-*/%]',
+    TokenType.LOGIC_OPERATOR: r'\|\||&&',
+    TokenType.BINARY_OPERATOR: r'[+\-*/%]|\.\.',
 }
+# Change the string to regex pattern
 TOKEN_REGEX = {token_type: re.compile(pattern) if isinstance(pattern, str) else pattern for token_type, pattern in TOKEN_REGEX.items()}
 
 @dataclass
@@ -74,6 +78,6 @@ def tokenize(code: str) -> list[Token]:
             tokens.append(Token(token_type, value, lineno))
             break
         if not match:
-            raise_error(Error('Tokenize', 'Invalid or unexpected token on "{}".'.format(code[:5])))
+            raise_error(Error('Tokenize', f'Invalid or unexpected token on "{code[:5]}"'))
     tokens.append(Token(TokenType.EOF, 'end of file'))
     return tokens

@@ -4,12 +4,14 @@ from error import Error, raise_error
 from records import Record
 from utils import generate_id
 
+# See for more information:
+# https://en.scratch-wiki.info/wiki/Scratch_File_Format#Blocks
+
 @dataclass
 class Value:
     value: Any
 
     def get_value(self) -> Any:
-        # See https://en.scratch-wiki.info/wiki/Scratch_File_Format#Blocks
         return self.value
 
 class String(Value):
@@ -24,7 +26,7 @@ class String(Value):
 EMPTY_STRING = String('')
 
 class BlockList(Value):
-    value: tuple  # (start: str, end: str)
+    value: tuple[str, str]  # (start, end)
 
     def get_start_end(self) -> tuple:
         return self.value
@@ -54,14 +56,14 @@ class Integer(Value):
         return [1, [4, str(self.value)]]
     
 class Variable(Value):
-    value: tuple  # (name: str, record: Record)
+    value: tuple[str, Record]  # (name, record)
 
     def __init__(self, name: str, record: Record):
         super().__init__((name, record))
 
     @property
     def id(self) -> str:
-        return generate_id((self.value[0], self.value[1]))
+        return generate_id(('variable', self.value[0], self.value[1]))
 
     def get_id_name(self) -> list[str]:
         return [self.id, self.id]

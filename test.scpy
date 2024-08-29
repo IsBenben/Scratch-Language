@@ -1,16 +1,26 @@
-/*
-Powered by Scratch.py.
-*/
+/* Powered by Scratch.py. */
+
+/**
+ * 说a，b秒
+ */
+function test_function(a, b) {
+    looks_say(a);
+    control_wait(b);
+    looks_say("");
+}
 
 var magical_number = 234; // 定义变量magical_number
 const TIME = 1; // 定义常量time，不可更改
 {
+    function test_function(a, b) {
+        looks_sayforsecs(b, a);
+    }
     var magical_number = 114514; // 在另一个作用域定义同名变量
-    looks_sayforsecs(magical_number, TIME);  // 说114514，TIME后消失
+    test_function(TIME, magical_number);  // 说114514，TIME后消失
     // 不影响外部作用域
 }
 magical_number -= 1;
-looks_sayforsecs(magical_number, TIME);  // 说233
+test_function(magical_number, TIME);  // 说233，按照外面的函数调用
 looks_sayforsecs(10 + 20, TIME);  // 说10+20
 looks_sayforsecs(7 % 3 * (10 + 30) / 5, TIME);  // 说7%3*(10+30)/5
 
