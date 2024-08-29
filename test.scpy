@@ -9,8 +9,8 @@ function test_function(a, b) {
     looks_say("");
 }
 
-var magical_number = 234; // 定义变量magical_number
-const TIME = 1; // 定义常量time，不可更改
+var magical_number = +-+-++---+-+234; // 定义变量magical_number=234
+const TIME = 0.5; // 定义常量time，不可更改
 {
     function test_function(a, b) {
         looks_sayforsecs(b, a);
@@ -23,6 +23,7 @@ magical_number -= 1;
 test_function(magical_number, TIME);  // 说233，按照外面的函数调用
 looks_sayforsecs(10 + 20, TIME);  // 说10+20
 looks_sayforsecs(7 % 3 * (10 + 30) / 5, TIME);  // 说7%3*(10+30)/5
+looks_sayforsecs("e: " .. e, TIME);  // 说e≈2.718
 
 if (magical_number >= 100) {
     looks_sayforsecs("Greater than 100", TIME);  // 说Greater than 100
@@ -30,9 +31,9 @@ if (magical_number >= 100) {
         var magical_number = "233!!!";
         looks_sayforsecs(magical_number, TIME);  // 说233!!!
     }
-    while (true) {
+    while (!(false || true && (true && false))) { // true
         looks_sayforsecs("Infinite loop", TIME);
     }
 } else {
-    looks_sayforsecs("Less than or equal to 100", TIME);
+    looks_sayforsecs("Less than or equal to 100", +inf);
 }

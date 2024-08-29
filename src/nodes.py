@@ -50,8 +50,8 @@ class Factor(Expression):
         return indent + 'Factor {N/A}\n'
 
 class Number(Factor):
-    def __init__(self, value: int):
-        self.value: int = value
+    def __init__(self, value: float):
+        self.value: float = value
     
     def dump(self, indent=''): 
         return indent + 'Number ' + str(self.value) + '\n'

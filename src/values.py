@@ -10,18 +10,33 @@ from utils import generate_id
 @dataclass
 class Value:
     value: Any
+    type: int | None = None
 
-    def get_value(self) -> Any:
-        return self.value
+    @property
+    def _type_value(self) -> list:
+        real_type = type(self).type
+        if real_type is None:
+            raise TypeError('Type not defined')
+        return [real_type, self.value]
+
+    def get_as_field(self) -> NoReturn:
+        raise_error(Error('Value', f'{type(self).__name__} cannot be used as a field'))
+
+    def get_as_boolean(self) -> NoReturn:
+        raise_error(Error('Value', f'{type(self).__name__} cannot be used as a boolean'))
+
+    def get_as_block(self) -> NoReturn:
+        raise_error(Error('Value', f'{type(self).__name__} cannot be used as a block'))
+
+    def get_as_normal(self) -> NoReturn:
+        raise_error(Error('Value', f'{type(self).__name__} cannot be used as a value'))
 
 class String(Value):
     value: str
+    type = 10
 
-    def get_id_name(self) -> list:
-        return [10, self.value]
-
-    def get_value(self) -> list:
-        return [1, self.get_id_name()]
+    def get_as_normal(self) -> list:
+        return [1, self._type_value]
 
 EMPTY_STRING = String('')
 
@@ -31,11 +46,8 @@ class BlockList(Value):
     def get_start_end(self) -> tuple:
         return self.value
     
-    def get_stack(self):
+    def get_as_block(self) -> list:
         return [2, self.value[0]]
-
-    def get_value(self) -> NoReturn:
-        raise_error(Error('Value', 'BlockList cannot be used as a value'))
 
 class Block(BlockList):
     value: str
@@ -43,30 +55,39 @@ class Block(BlockList):
     def get_start_end(self) -> tuple:
         return self.value, self.value
     
-    def get_stack(self):
+    def get_as_block(self):
         return [2, self.value]
 
-    def get_value(self) -> list:
-        return [3, self.value, EMPTY_STRING.get_id_name()]
+    def get_as_boolean(self) -> list:
+        return [2, self.value]
 
-class Integer(Value):
-    value: int
+    def get_as_normal(self) -> list:
+        return [3, self.value, EMPTY_STRING._type_value]
 
-    def get_value(self) -> list:
-        return [1, [4, str(self.value)]]
+class Number(Value):
+    value: int | float
+    type = 4
+
+    def get_as_normal(self) -> list:
+        return [1, self._type_value]
     
 class Variable(Value):
     value: tuple[str, Record]  # (name, record)
+    type = 12
 
     def __init__(self, name: str, record: Record):
         super().__init__((name, record))
 
     @property
+    def _type_value(self) -> list:
+        return [type(self).type, self.id, self.id]
+
+    @property
     def id(self) -> str:
         return generate_id(('variable', self.value[0], self.value[1]))
 
-    def get_id_name(self) -> list[str]:
+    def get_as_field(self) -> list[str]:
         return [self.id, self.id]
 
-    def get_value(self) -> list:
-        return [3, [12, self.id, self.id], EMPTY_STRING.get_id_name()]
+    def get_as_normal(self) -> list:
+        return [3, self._type_value, EMPTY_STRING._type_value]

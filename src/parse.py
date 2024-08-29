@@ -1,7 +1,7 @@
 from tokens import TokenType, tokenize, Token
 from nodes import *
 from error import Error, raise_error
-from typing import Optional, NoReturn, Any
+from typing import Optional, NoReturn, Any, Callable
 
 sign_to_english = {
     '+': 'add',
@@ -15,10 +15,15 @@ sign_to_english = {
     '!': 'not',
     '||': 'or',
     '&&': 'and',
+    '..': 'join',
 }
-reverse_sign = {
-    '>': '<',
-    '<': '>',
+inverse_sign = {
+    '>=': '<',
+    '<=': '>',
+    '==': '!=',
+    '!=': '==',
+    '>': '<=',
+    '<': '>='
 }
 
 def extend_or_append(list_: list, value: list | Any):
@@ -76,78 +81,130 @@ class Parser:
                 return self.parse_repeat_statement(tokens)
             if keyword == 'function':
                 return self.parse_function_declaration(tokens)
-        statement = self.parse_expression(tokens)
+        statement = self.parse_join_expression(tokens)
         self.eat(tokens, TokenType.SEMICOLON)
         return statement
     
-    def parse_expression(self, tokens: list[Token]) -> Expression:
-        if len(tokens) >= 2 and tokens[1].type == TokenType.COMPARE:
-            if tokens[1].value in ['>=', '<=']:
-                return self.parse_comparison_expression(tokens)
-        return self.parse_additive_expression(tokens)
+    # Deprecated!
+    # def parse_expression(self, tokens: list[Token]) -> Expression:
+    #     if len(tokens) >= 2 and tokens[1].type == TokenType.COMPARE:
+    #         if tokens[1].value in ['>=', '<=']:
+    #             return self.parse_comparison_expression(tokens)
+    #     return self.parse_join_expression(tokens)
     
-    def parse_comparison_expression(self, tokens):
-        if tokens[0].type == TokenType.KEYWORD:
+    def parse_and_expression(self, tokens: list[Token]) -> Expression:
+        return self._parse_expression(tokens, ['&&'], self.parse_or_expression)
+
+    def parse_or_expression(self, tokens: list[Token]) -> Expression:
+        return self._parse_expression(tokens, ['||'], self.parse_comparison_expression)
+
+    def parse_comparison_expression(self, tokens) -> Expression | NoReturn:
+        inverse = False
+        if tokens[0].type == TokenType.OPERATOR and tokens[0].value == '!':
+            self.eat(tokens)
+            inverse = not inverse
+        
+        if tokens[0].type == TokenType.LEFT_PAREN:
+            self.eat(tokens)  # eat TokenType.LEFT_PAREN
+            comparison_expression = self.parse_and_expression(tokens)
+            self.eat(tokens, TokenType.RIGHT_PAREN)
+        elif tokens[0].type == TokenType.KEYWORD:
             if tokens[0].value in ['true', 'false']:
                 boolean = self.eat(tokens).value == 'true'
+                if inverse:
+                    boolean = not boolean
                 if boolean:
                     return FunctionCall('operator_not', [])  # not() -> true
                 return FunctionCall('operator_not', [FunctionCall('operator_not', [])])  # not(true) -> false
             else:
                 raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected keyword "true" or "false"'))
-        left = self.parse_additive_expression(tokens)
-        operator = self.eat(tokens, TokenType.COMPARE).value
-        right = self.parse_additive_expression(tokens)
-        if operator in ['>=', '<=']:
-            # Syntactic sugar: a >= b
-            return FunctionCall('operator_' + sign_to_english['!'], [
-                FunctionCall('operator_' + sign_to_english[reverse_sign[operator[0]]], [left, right])
-            ])
-        return FunctionCall('operator_' + sign_to_english[operator], [left, right])
+        else:
+            left = self.parse_additive_expression(tokens)
+            operator = self.eat(tokens, TokenType.COMPARE).value
+            right = self.parse_additive_expression(tokens)
+            if operator in ['>=', '<=', '!=']:
+                operator = inverse_sign[operator]
+                inverse = not inverse
+            comparison_expression = FunctionCall('operator_' + sign_to_english[operator], [left, right])
+        
+        if inverse:
+            return FunctionCall('operator_' + sign_to_english['!'], [comparison_expression])
+        return comparison_expression
+
+    def _parse_expression(self, tokens: list[Token], operators: list[str], next_level: Callable) -> Expression:
+        left = next_level(tokens)
+        while tokens[0].type == TokenType.OPERATOR and tokens[0].value in operators:
+            operator = self.eat(tokens).value
+            right = next_level(tokens)
+            left = FunctionCall('operator_' + sign_to_english[operator], [left, right])
+        return left
+
+    def parse_join_expression(self, tokens: list[Token]) -> Expression:
+        return self._parse_expression(tokens, ['..'], self.parse_additive_expression)
 
     def parse_additive_expression(self, tokens: list[Token]) -> Expression:
-        left = self.parse_multiplicative_expression(tokens)
-        while tokens[0].type == TokenType.BINARY_OPERATOR and tokens[0].value in ['+', '-']:
-            operator = self.eat(tokens).value
-            right = self.parse_multiplicative_expression(tokens)
-            left = FunctionCall('operator_' + sign_to_english[operator], [left, right])
-        return left
+        return self._parse_expression(tokens, ['+', '-'], self.parse_multiplicative_expression)
 
     def parse_multiplicative_expression(self, tokens: list[Token]) -> Expression:
-        left = self.parse_factor(tokens)
-        while tokens[0].type == TokenType.BINARY_OPERATOR and tokens[0].value in ['*', '/', '%']:
-            operator = self.eat(tokens).value
-            right = self.parse_factor(tokens)
-            left = FunctionCall('operator_' + sign_to_english[operator], [left, right])
-        return left
+        return self._parse_expression(tokens, ['*', '/', '%'], self.parse_factor)
     
     def parse_factor(self, tokens: list[Token]) -> Expression:
-        if tokens[0].type == TokenType.NUMBER:
-            value = self.eat(tokens).value  # eat TokenType.NUMBER
-            return Number(int(value))
-        if tokens[0].type == TokenType.LEFT_PAREN:
+        multiplier = 1
+        while tokens[0].type == TokenType.OPERATOR and tokens[0].value in ['+', '-']:
+            if self.eat(tokens).value == '-':
+                multiplier *= -1
+        factor = None
+
+        if tokens[0].type == TokenType.INTEGER:
+            value = self.eat(tokens).value  # eat TokenType.INTEGER
+            base = 10
+            if value.startswith('0') and value != '0':
+                # 0o, 0b, 0x
+                letter_to_base = {
+                    'b': 2,
+                    'o': 8,
+                    'x': 16
+                }
+                base = letter_to_base[value[1]]
+                value = value[2:]
+            # Multiply on compiling
+            factor = Number(int(value, base) * multiplier)
+            multiplier = 1
+        elif tokens[0].type == TokenType.FLOAT:
+            value = self.eat(tokens).value  # eat TokenType.FLOAT
+            if value.endswith('.'):
+                value += '0'
+            if value.startswith('.'):
+                value = '0' + value
+            factor = Number(float(value) * multiplier)
+            multiplier = 1
+        elif tokens[0].type == TokenType.LEFT_PAREN:
             self.eat(tokens)  # eat TokenType.LEFT_PAREN
-            expression = self.parse_expression(tokens)
+            expression = self.parse_join_expression(tokens)
             self.eat(tokens, TokenType.RIGHT_PAREN)
-            return expression
-        if tokens[0].type == TokenType.STRING:
-            return String(self.eat(tokens).value)  # eat TokenType.STRING
-        if len(tokens) >= 2 and tokens[0].type == TokenType.IDENTIFIER and tokens[1].type == TokenType.LEFT_PAREN:
-            return self.parse_function_call(tokens)
-        if tokens[0].type == TokenType.IDENTIFIER:
-            return Identifier(self.eat(tokens).value)  # eat TokenType.STRING
+            factor = expression
+        elif tokens[0].type == TokenType.STRING:
+            factor = String(self.eat(tokens).value)  # eat TokenType.STRING
+        elif len(tokens) >= 2 and tokens[0].type == TokenType.IDENTIFIER and tokens[1].type == TokenType.LEFT_PAREN:
+            factor = self.parse_function_call(tokens)
+        elif tokens[0].type == TokenType.IDENTIFIER:
+            factor = Identifier(self.eat(tokens).value)  # eat TokenType.STRING
+        else:  # No any factor found
+            raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected a factor'))
         
-        raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected a factor'))
+        if multiplier == 1:
+            return factor
+        return FunctionCall('operator_' + sign_to_english['*'], [factor, Number(multiplier)])
 
     def parse_function_call(self, tokens: list[Token]) -> FunctionCall:
         name = self.parse_identifier(tokens).name
         params = []
         self.eat(tokens, TokenType.LEFT_PAREN)
         if tokens[0].type != TokenType.RIGHT_PAREN:
-            params.append(self.parse_expression(tokens))
+            params.append(self.parse_join_expression(tokens))
             while tokens[0].type == TokenType.COMMA:
                 self.eat(tokens)  # eat TokenType.COMMA   
-                params.append(self.parse_expression(tokens))
+                params.append(self.parse_join_expression(tokens))
         self.eat(tokens, TokenType.RIGHT_PAREN)
         return FunctionCall(name, params)
 
@@ -178,10 +235,13 @@ class Parser:
         if is_declare and tokens[0].value != '=':
             raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "=" after variable declaration'))
         assignment_mode = self.eat(tokens).value  # eat TokenType.ASSIGNMENT
-        expression = self.parse_expression(tokens)
+        expression = self.parse_join_expression(tokens)
+        self.eat(tokens, TokenType.SEMICOLON)
         if not is_declare:
             if assignment_mode == '=':
                 return FunctionCall('data_setvariableto', [identifier, expression])
+            elif assignment_mode == '+=':
+                return FunctionCall('data_changevariableby', [identifier, expression])
             else:
                 return FunctionCall('data_setvariableto', [identifier, FunctionCall('operator_' + sign_to_english[assignment_mode[0]], [identifier, expression])])
         if assignment_mode != '=':
@@ -195,7 +255,7 @@ class Parser:
     def parse_if_statement(self, tokens: list[Token]) -> FunctionCall:
         self.eat(tokens)  # eat TokenType.KEYWORD
         self.eat(tokens, TokenType.LEFT_PAREN)
-        condition = self.parse_comparison_expression(tokens)
+        condition = self.parse_and_expression(tokens)
         self.eat(tokens, TokenType.RIGHT_PAREN)
         sub_stack = Block(self.parse_statement(tokens))
         if tokens[0].type == TokenType.KEYWORD:
@@ -208,7 +268,7 @@ class Parser:
     def parse_repeat_statement(self, tokens: list[Token]) -> FunctionCall:
         mode = self.eat(tokens).value  # eat TokenType.KEYWORD, "while" or "until"
         self.eat(tokens, TokenType.LEFT_PAREN)
-        condition = self.parse_comparison_expression(tokens)
+        condition = self.parse_and_expression(tokens)
         if mode == 'while':
             condition = FunctionCall('operator_' + sign_to_english['!'], [condition])
         self.eat(tokens, TokenType.RIGHT_PAREN)
