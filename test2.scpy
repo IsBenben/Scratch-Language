@@ -1,3 +1,0 @@
-if (true) {
-    looks_say("Hello, world!");
-}
