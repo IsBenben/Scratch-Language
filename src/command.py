@@ -2,6 +2,9 @@ from interpret import Interpreter
 from parse import Parser
 from tokens import tokenize
 import json
+import sys
+
+sys.setrecursionlimit(2000)
 
 def run_cmd():
     parser = Parser()
@@ -25,7 +28,7 @@ def run_cmd():
                 print(repr(token))
         elif user_input == 'parse':
             code = input('[Scratch.py] Enter code: ')
-            print(parser.parse(code).dump().replace('\n', '\n'))
+            print(parser.parse(code).dump())
         elif user_input == 'file':
             interpreter = Interpreter()
             code = input('[Scratch.py] Enter filename: ')

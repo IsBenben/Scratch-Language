@@ -1,0 +1,46 @@
+/* Powered by Scratch-Lang */
+
+; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
+
+/**
+ * 说a，b秒
+ */
+function test_function(a, b) {
+    looks_say(a)
+    control_wait \
+        (b)
+    looks_say("")
+}
+
+var magical_number = +-+-++---+-+234 // 定义变量magical_number=234
+const TIME = 0.8 // 定义常量time，不可更改
+{
+    function test_function(a, b) {
+        looks_sayforsecs(b, a)
+    }
+    var magical_number = 114514 // 在另一个作用域定义同名变量
+    test_function("1213213"[1], magical_number) // 说114514，1秒后消失
+    // 不影响外部作用域
+}
+magical_number -= 1
+test_function(magical_number, TIME) // 说233，按照外面的函数调用
+looks_sayforsecs(10 + 20, TIME) // 说10+20
+looks_sayforsecs(7 % 3 * (10 + 30) / 5, TIME) // 说7%3*(10+30)/5
+looks_sayforsecs("e: " .. e, TIME) // 说e≈2.718
+
+if (magical_number >= 100) {
+    looks_sayforsecs("Greater than 100", TIME) // 说Greater than 100
+    if (magical_number == 233) {
+        var magical_number = "1145141923319810"
+        if ("233" in magical_number) {
+            looks_sayforsecs("Found 233!!!", TIME) // 说233!!!
+        } else {
+            looks_sayforsecs("Ordinary Text: " + magical_number, TIME) // 说原始值
+        }
+    }
+    while (!(false || true && (true && false))) { // true
+        looks_sayforsecs("Infinite loop", TIME)
+    }
+} else {
+    looks_sayforsecs("Less than or equal to 100", +inf)
+}
