@@ -81,6 +81,8 @@ class Parser:
                 return self.parse_repeat_statement(tokens)
             if keyword == 'function':
                 return self.parse_function_declaration(tokens)
+            if keyword == 'clone':
+                return self.parse_clone_statement(tokens)
         statement = self.parse_join_expression(tokens)
         self.eat(tokens, TokenType.STATEMENT_END)
         return statement
@@ -302,3 +304,8 @@ class Parser:
         self.eat(tokens, TokenType.RIGHT_PAREN)
         sub_stack = Block(self.parse_statement(tokens))
         return FunctionDeclaration(name, params, sub_stack)
+
+    def parse_clone_statement(self, tokens: list[Token]) -> Clone:
+        self.eat(tokens)  # eat TokenType.KEYWORD
+        clone = Block(self.parse_statement(tokens))
+        return Clone(clone)

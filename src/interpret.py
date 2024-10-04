@@ -16,18 +16,20 @@ PRO = 'procedure_'
 @dataclass
 class Input:
     name: str
-    type: Literal['normal', 'boolean', 'block'] = 'normal'
+    type: Literal['normal', 'boolean', 'block', 'shadow'] = 'normal'
     required: bool = True
 
 @dataclass
 class BlockType:
     inputs: tuple[Input, ...] = ()
     fields: tuple[Input, ...] = ()
+    shadow: bool = False
 
-    def __init__(self, inputs=(), fields=()):
+    def __init__(self, inputs: tuple[Input | str, ...]=(), fields: tuple[Input | str, ...]=(), shadow: bool=False):
         _process = lambda x: tuple(map(lambda y: (Input(y) if not isinstance(y, Input) else y), x))
         self.inputs = _process(inputs)
         self.fields = _process(fields)
+        self.shadow = shadow
     
     @property
     def required_arguments_count(self):
@@ -35,6 +37,8 @@ class BlockType:
         return _process(self.fields) + _process(self.inputs)
 
 BLOCK_TYPES: dict[str, BlockType] = {
+    'control_create_clone_of': BlockType(inputs=(Input(name='CLONE_OPTION', type='shadow'),)),
+    'control_create_clone_of_menu': BlockType(fields=('CLONE_OPTION',), shadow=True),
     'control_if': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
                                     Input(name='SUBSTACK', type='block'))),
     'control_if_else': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
@@ -65,6 +69,9 @@ BLOCK_TYPES: dict[str, BlockType] = {
     'operator_or': BlockType(inputs=(Input(name='OPERAND1', type='boolean'),
                                      Input(name='OPERAND2', type='boolean'))),
     'operator_subtract': BlockType(inputs=('NUM1', 'NUM2')),
+    'sensing_answer': BlockType(),
+    'sensing_askandwait': BlockType(inputs=('QUESTION',)),
+    'sensing_loudness': BlockType(),
 }
 
 class Interpreter(NodeVisitor):
@@ -74,6 +81,8 @@ class Interpreter(NodeVisitor):
         self.blocks: dict[str, dict] = self.project['targets'][1]['blocks']
         self.variables: dict[str, list[str]] = self.project['targets'][0]['variables']
         self.parent_function: Optional[FunctionDeclaration] = None
+        self.clone_variable = generate_id(('variable', 'clone', None))
+        self.project['targets'][1]['variables'][self.clone_variable] = [self.clone_variable, '[NOT ASSIGNED]']
     
     def visit_Block(self, node) -> BlockList | None:
         if not node.body:
@@ -116,6 +125,8 @@ class Interpreter(NodeVisitor):
 
     def visit_Identifier(self, node) -> Variable | Block | String | Number | NoReturn:
         if not self.record.has_variable(node.name):
+            if node.name in self.project['targets'][1]['variables']:
+                return Variable(node.name, None)
             magic_number = {
                 'e': math.e,
                 'pi': math.pi,
@@ -194,7 +205,7 @@ class Interpreter(NodeVisitor):
         # Custom functions
         call_id = generate_id(('call', node))
         function_node = self.record.resolve_function(node.name).functions[node.name]
-        function_id = generate_id((f'{PRO}name', self.record, function_node.name))
+        function_id = generate_id((f'{PRO}name', self.record.resolve_function(function_node.name), function_node.name))
         arg_ids = [generate_id((f'{PRO}argument', function_id, arg_name)) for arg_name in function_node.args]
 
         # mutation
@@ -246,7 +257,7 @@ class Interpreter(NodeVisitor):
         for i in range(len(node.args)):
             arg = self.visit(node.args[i])
             if i < len(bt.fields):
-                if isinstance(arg, Variable):
+                if isinstance(arg, Variable) and arg.value[1] is not None:
                     # Then, by default we think it set the variables
                     # TODO: modify the behavior
                     variable = arg.value[1].variables[arg.value[0]]
@@ -259,14 +270,17 @@ class Interpreter(NodeVisitor):
                         # Second change: raise an error
                         if variable.change_counts >= 2:
                             raise_error(Error('Interpret', 'Cannot set a constant variable'))
-                fields[bt.fields[i].name] = arg.get_as_field()
+                value = arg.get_as_field()
+                fields[bt.fields[i].name] = value
             elif i < len(bt.fields + bt.inputs):
                 # Set a block parent
                 if isinstance(arg, Block):
                     self.blocks[arg.get_start_end()[0]]['parent'] = call_id
 
                 arg_type = bt.inputs[i - len(bt.fields)]
-                if arg_type.type == 'block':
+                if arg_type.type == 'shadow':
+                    arg_value = arg.get_as_shadow()
+                elif arg_type.type == 'block':
                     arg_value = arg.get_as_block()
                 elif arg_type.type == 'normal':
                     arg_value = arg.get_as_normal()
@@ -283,7 +297,7 @@ class Interpreter(NodeVisitor):
             'parent': None,
             'inputs': inputs,
             'fields': fields,
-            'shadow': False,
+            'shadow': bt.shadow,
             'topLevel': False
         }
         return Block(call_id)
@@ -346,3 +360,24 @@ class Interpreter(NodeVisitor):
             "topLevel": False,
             "mutation": mutation
         }
+
+    def visit_Custom(self, node) -> Custom:
+        return Custom(node.name)
+    
+    def visit_Clone(self, node) -> BlockList | None:
+        event_id = generate_id(('event', node))
+        event = self.blocks[event_id] = {
+            'opcode': 'control_start_as_clone',
+            'next': None,
+            'parent': None,
+            'inputs': {},
+            'fields': {},
+            'shadow': False,
+            'topLevel': True,
+        }
+        block = self.visit(node.clone)
+        # Simple understand: doubly linked lists
+        statement_start = block.get_start_end()[0]
+        self.blocks[statement_start]['parent'] = event_id
+        event['next'] = statement_start
+        return self.visit_Block(node.parent)

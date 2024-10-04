@@ -87,7 +87,7 @@ def tokenize(code: str) -> list[Token]:
             if token_type == TokenType.IDENTIFIER:
                 if value in ['in', 'contains']:
                     token_type = TokenType.COMPARE
-                elif value in ['const', 'var', 'if', 'else', 'while', 'until', 'true', 'false', 'function', 'return']:
+                elif value in ['const', 'var', 'if', 'else', 'while', 'until', 'true', 'false', 'function', 'return', 'clone']:
                     token_type = TokenType.KEYWORD
             tokens.append(Token(token_type, value, lineno))
             break

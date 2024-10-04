@@ -38,8 +38,13 @@ if (magical_number >= 100) {
             looks_sayforsecs("Ordinary Text: " + magical_number, TIME) // 说原始值
         }
     }
-    while (!(false || true && (true && false))) { // true
-        looks_sayforsecs("Infinite loop", TIME)
+    
+    clone {
+        // 克隆一个新的克隆体
+        looks_sayforsecs("I'm a clone!", TIME)
+        while (!(false || true && (true && false))) { // true
+            looks_sayforsecs("Infinite loop", TIME)
+        }
     }
 } else {
     looks_sayforsecs("Less than or equal to 100", +inf)
