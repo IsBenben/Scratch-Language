@@ -30,6 +30,9 @@ class Value:
 
     def get_as_normal(self) -> NoReturn:
         raise_error(Error('Value', f'{type(self).__name__} cannot be used as a value'))
+    
+    def get_as_shadow(self) -> NoReturn:
+        raise_error(Error('Value', f'{type(self).__name__} cannot be used as a shadow'))
 
 class String(Value):
     value: str
@@ -64,6 +67,9 @@ class Block(BlockList):
     def get_as_normal(self) -> list:
         return [3, self.value, EMPTY_STRING._type_value]
 
+    def get_as_shadow(self) -> list:
+        return [1, self.value]
+
 class Number(Value):
     value: int | float
     type = 4
@@ -72,10 +78,10 @@ class Number(Value):
         return [1, self._type_value]
     
 class Variable(Value):
-    value: tuple[str, Record]  # (name, record)
+    value: tuple[str, Record | None]  # (name, record)
     type = 12
 
-    def __init__(self, name: str, record: Record):
+    def __init__(self, name: str, record: Record | None):
         super().__init__((name, record))
 
     @property
@@ -91,3 +97,9 @@ class Variable(Value):
 
     def get_as_normal(self) -> list:
         return [3, self._type_value, EMPTY_STRING._type_value]
+
+class Custom(Value):
+    value: str
+
+    def get_as_field(self) -> list:
+        return [self.value, None]

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from utils import generate_id
 
 INDENT = ' |  '
 
@@ -107,6 +108,38 @@ class FunctionDeclaration(Statement):
         result += indent + '}\n'
         return result
 
+class Custom(Block):
+    def __init__(self, name: str):
+        self.name: str = name
+    
+    def dump(self, indent=''):
+        return indent + 'Custom ' + self.name + '\n'
+
+class Clone(Statement):
+    def __init__(self, clone: Block):
+        self.clone = FunctionCall('control_if', [
+            FunctionCall('operator_equals', [
+                Identifier(generate_id(('variable', 'clone', None))),
+                String(generate_id(('clone', self))),
+            ]),
+            clone,
+        ])
+        self.parent = Block([
+            FunctionCall('data_setvariableto', [
+                Identifier(generate_id(('variable', 'clone', None))),
+                String(generate_id(('clone', self)))
+            ]),
+            FunctionCall('control_create_clone_of', [
+                FunctionCall('control_create_clone_of_menu', [Custom('_myself_')])
+            ],
+        )])
+    
+    def dump(self, indent=''):
+        result = indent + 'Clone {\n'
+        result += self.clone.dump(indent + INDENT)
+        result += indent + '}\n'
+        return result
+
 class NodeVisitor:
     def visit(self, node: Node):
         return getattr(self, 'visit_' + type(node).__name__, self.visit_error)(node)
@@ -142,6 +175,12 @@ class NodeVisitor:
         pass
 
     def visit_FunctionDeclaration(self, node: FunctionDeclaration):
+        pass
+
+    def visit_Custom(self, node: Custom):
+        pass
+
+    def visit_Clone(self, node: Clone):
         pass
 
     def visit_error(self, node: Node):
