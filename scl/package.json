@@ -1,0 +1,25 @@
+{
+  "name": "scl",
+  "displayName": "Scratch-Lang-Extension",
+  "description": "VS Code Extension for Scratch Language (https://github.com/IsBenben/Scratch.py)",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.2"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "scl",
+      "aliases": ["Scratch Lang", "scl"],
+      "extensions": [".scl"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "scl",
+      "scopeName": "source.scl",
+      "path": "./syntaxes/scl.tmLanguage copy 3.json"
+    }]
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Scratch Lang",
+  "patterns": [
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#variable"
+    },
+    {
+      "include": "#constant"
+    },
+    {
+      "include": "#storage"
+    }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.scl",
+          "match": "\\b(if|else|while|until|clone)\\b"
+        },
+        {
+          "name": "keyword.operator.scl",
+          "match": "\\b(in|contains)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.scl",
+      "begin": "\"",
+      "end": "\""
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.double-slash.scl",
+          "match": "//[^\\n\\r]*"
+        },
+        {
+          "name": "comment.block.scl",
+          "match": "/\\*(.|\\n|\\r)*?\\*/"
+        }
+      ]
+    },
+    "variable": {
+      "patterns": [
+        {
+			"name": "variable.scl",
+			"match": "\\b[a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*\\b"
+		  },
+		  {
+			"name": "variable.language.scl",
+			"match": "\\b(inf|pi|e)\\b"
+		  }
+      ]
+    },
+    "constant": {
+      "patterns": [
+        {
+          "name": "constant.numeric.scl",
+          "match": "[1-9]\\d*\\.\\d*|0?\\.\\d+|0b[0-1]+|0o[0-7]+|0x[0-9a-fA-F]+|[1-9]\\d*|0"
+        },
+        {
+          "name": "constant.language.scl",
+          "match": "\\b(true|false)\\b"
+        }
+      ]
+    },
+    "storage": {
+      "patterns": [
+        {
+          "name": "storage.type.scl",
+          "match": "\\b(const|var|function)\\b"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.scl"
+}

@@ -6,7 +6,7 @@ Scratch-Language.
 
 ## 介绍
 
-Scratch.py 是Python制作的编程语言，它的编译器可以将你写的源代码转换为Scratch的project.json文件。
+Scratch.py是Python制作的编程语言，它的编译器可以将你写的源代码转换为Scratch的project.json文件。
 
 ## 使用
 
@@ -183,4 +183,18 @@ function test_function(a, b) {
 }
 
 test_function("Hello world", inf)
+```
+
+### 克隆体
+
+```plain
+clone {
+    // 克隆体的代码
+    looks_say("Hello, world! #1");
+}
+clone {
+    // 克隆体的代码
+    looks_say("Hello, world! #2");
+}
+// 两个克隆体的代码不会互相影响
 ```
