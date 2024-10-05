@@ -204,7 +204,7 @@ class Parser:
         elif len(tokens) >= 2 and tokens[0].type == TokenType.IDENTIFIER and tokens[1].type == TokenType.LEFT_PAREN:
             factor = self.parse_function_call(tokens)
         elif tokens[0].type == TokenType.IDENTIFIER:
-            factor = Identifier(self.eat(tokens).value)  # eat TokenType.STRING
+            factor = self.parse_identifier(tokens)
         else:  # No any factor found
             raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected a factor'))
         
