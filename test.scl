@@ -2,6 +2,14 @@
 
 ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
 
+const TIME = 0.8;  // 定义常量time，不可更改
+array a = [1, 2, 3, 4, 5];
+array b = a;  // copy a array
+b[1] = 10;
+a = [5] + a;
+looks_sayforsecs("Item (10) b[1]: " .. b[1], TIME);
+looks_sayforsecs("Item (5) a[1]: " .. a[1], TIME);
+
 /**
  * 说a，b秒
  */
@@ -13,7 +21,6 @@ function test_function(a, b) {
 }
 
 var magical_number = +-+-++---+-+234 // 定义变量magical_number=234
-const TIME = 0.8 // 定义常量time，不可更改
 {
     function test_function(a, b) {
         looks_sayforsecs(b, a)
