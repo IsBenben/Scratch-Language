@@ -18,7 +18,8 @@ const TIME = 0.8 // 定义常量time，不可更改
     function test_function(a, b) {
         looks_sayforsecs(b, a)
     }
-    var magical_number = 114514 // 在另一个作用域定义同名变量
+    var magical_number = 114514 
+    // 在另一个作用域定义同名变量
     test_function("1213213"[1], magical_number) // 说114514，1秒后消失
     // 不影响外部作用域
 }

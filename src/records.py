@@ -4,6 +4,8 @@ from error import raise_error, Error
 from nodes import FunctionDeclaration
 from typing import Optional, Literal
 
+# Record of Interpreter
+
 VariableType = Literal['variable', 'argument']
 
 @dataclass
