@@ -112,6 +112,8 @@ class Parser:
                 return self.parse_clone_statement(tokens)
             if keyword == 'delete':
                 return self.parse_delete(tokens)
+            if keyword == 'for':
+                return self.parse_for_statement(tokens)
         statement = self.parse_join_expression(tokens)
         self.eat(tokens, TokenType.STATEMENT_END)
         return statement
@@ -224,7 +226,41 @@ class Parser:
         return left
 
     def parse_join_expression(self, tokens: list[Token]) -> Expression:
-        return self._parse_expression(tokens, ['..'], self.parse_additive_expression)
+        assert self.record is not None
+
+        left = self._parse_expression(tokens, ['..'], self.parse_additive_expression)
+        if tokens[0].type == TokenType.OPERATOR and tokens[0].value == '->':
+            if isinstance(left, ListIdentifier):
+                raise_error(Error('Parse', 'Cannot use "->" operator with array'))
+            self.eat(tokens)  # eat TokenType.OPERATOR
+            right = self.parse_join_expression(tokens)
+            if isinstance(right, ListIdentifier):
+                raise_error(Error('Parse', 'Cannot use "->" operator with array'))
+            
+            # # Pseudo Code:
+            # result = []
+            # i = left
+            # while i <= right:
+            #    result.append(i)
+            #    i += 1
+            result = ListIdentifier('')
+            result.name = generate_id(('array', 'range', result))
+            index = Identifier(generate_id(('array', 'index', result)))
+            self.record.block.extend([
+                self.record.variable_declaration(result.name, False, True),
+                self.record.variable_declaration(index.name, False, False),
+                FunctionCall('data_deletealloflist', [result]),
+                FunctionCall('data_setvariableto', [index, left]),
+                FunctionCall('control_repeat_until', [
+                    FunctionCall('operator_gt', [index, right]),
+                    Block([
+                        FunctionCall('data_addtolist', [result, index]),
+                        FunctionCall('data_changevariableby', [index, Number(1)]),
+                    ])
+                ]),
+            ])
+            left = result
+        return left
 
     def parse_additive_expression(self, tokens: list[Token]) -> Expression:
         return self._parse_expression(tokens, ['+', '-'], self.parse_multiplicative_expression)
@@ -480,3 +516,37 @@ class Parser:
         index = self.parse_join_expression(tokens)
         self.eat(tokens, TokenType.SUBSCRIPT_RIGHT)
         return FunctionCall('data_deleteoflist', [name, index])
+
+    def parse_for_statement(self, tokens: list[Token]) -> Block:
+        assert self.record is not None
+
+        self.eat(tokens)  # eat TokenType.KEYWORD
+        self.eat(tokens, TokenType.LEFT_PAREN)
+        var = self.parse_identifier(tokens)
+        index = Identifier(generate_id(('for_each', var)))
+        assignment = self.eat(tokens, TokenType.ASSIGNMENT)
+        if assignment.value != '=':
+            raise_error(Error('Parse', f'Unexpected token "{assignment.desc}", expected "="'))
+        sequence = self.parse_join_expression(tokens)
+        if not isinstance(sequence, ListIdentifier):
+            raise_error(Error('Parse', f'Expected a list identifier'))
+        self.eat(tokens, TokenType.RIGHT_PAREN)
+        body = Block(self.parse_statement(tokens))
+        return Block([
+            self.record.variable_declaration(var.name, False, False),
+            self.record.variable_declaration(index.name, False, False),
+            FunctionCall('data_setvariableto', [index, Number(0)]),
+            FunctionCall('control_repeat_until', [
+                FunctionCall('operator_equals', [
+                    index,
+                    FunctionCall('data_lengthoflist', [sequence])
+                ]),
+                Block([
+                    FunctionCall('data_changevariableby', [index, Number(1)]),
+                    FunctionCall('data_setvariableto', [
+                        var,
+                        FunctionCall('data_itemoflist', [sequence, index])
+                    ]),
+                ] + body.body)
+            ])
+        ])
