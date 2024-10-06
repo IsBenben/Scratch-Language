@@ -44,7 +44,7 @@ TOKEN_REGEX: dict[TokenType, re.Pattern | str] = {
     TokenType.STRING: r'".*?"',
     TokenType.COMPARE: r'==|!=|<=|>=|<|>',
     TokenType.ASSIGNMENT: r'=|\+=|-=|\*=|/=|%=',
-    TokenType.OPERATOR: r'[+\-*/%]|\.{2}|!|\|\||&&',
+    TokenType.OPERATOR: r'->|[+\-*/%]|\.{2}|!|\|\||&&',
 }
 # Change the string to regex pattern
 TOKEN_REGEX = {
@@ -62,9 +62,10 @@ class Token:
 
     @property
     def desc(self):
+        escaped = self.value.replace('\n', '\\n')
         if self.lineno is None:
-            return self.value
-        return f'{self.value} (line {self.lineno})'
+            return escaped
+        return f'{escaped} (line {self.lineno})'
 
 def tokenize(code: str) -> list[Token]:
     tokens = []
@@ -87,7 +88,9 @@ def tokenize(code: str) -> list[Token]:
             if token_type == TokenType.IDENTIFIER:
                 if value in ['in', 'contains']:
                     token_type = TokenType.COMPARE
-                elif value in ['const', 'var', 'if', 'else', 'while', 'until', 'true', 'false', 'function', 'clone', 'array', 'delete']:
+                elif value in ['const', 'var', 'if', 'else', 'while', 'until',
+                               'true', 'false', 'function', 'clone', 'array',
+                               'delete', 'for']:
                     token_type = TokenType.KEYWORD
             tokens.append(Token(token_type, value, lineno))
             break

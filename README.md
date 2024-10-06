@@ -16,7 +16,7 @@ Scratch.py是Python制作的编程语言，它的编译器可以将你写的源�
 
 ### 注释
 
-```plain
+```scl
 // 单行注释
 /*
 多行注释
@@ -27,7 +27,7 @@ Scratch.py是Python制作的编程语言，它的编译器可以将你写的源�
 
 函数名可以在 <https://en.scratch-wiki.info/wiki/List_of_Block_Opcodes> 上找。仅支持小部分函数。
 
-```plain
+```scl
 // 说hello,world
 looks_say("hello,world")
 ```
@@ -38,7 +38,7 @@ looks_say("hello,world")
 
 一条语句以 `;` 或换行结尾。
 
-```plain
+```scl
 // 两条以换行分割的语句
 looks_say("hello,world")
 looks_say("hello,world")
@@ -49,7 +49,7 @@ looks_say("hello,world"); looks_say("hello,world");
 
 ### 变量
 
-```plain
+```scl
 // 声明
 var a = 1
 const b = 2
@@ -72,7 +72,7 @@ looks_say(a)
 
 这些变量不属于关键字。可以被同名声明覆盖，而不会报错。
 
-```plain
+```scl
 // Python代码：__import__('math').e / .pi
 e: 2.718...
 pi: 3.141...
@@ -87,7 +87,7 @@ nan -> NaN: 0 / 0
 
 本质上就是不同作用域改不同的变量名。
 
-```plain
+```scl
 var a = 1  // 外层作用域
 {
 	var a = 2  // 内层作用域
@@ -127,7 +127,7 @@ a  // == 1，内层不影响外层
 
 ### 分支
 
-```plain
+```scl
 if (true) {
     looks_say("It's true!")
 } else {
@@ -148,7 +148,7 @@ if (true) {
 
 #### 示例
 
-```plain
+```scl
 looks_sayforsecs("e: " .. e, 0.5)
 looks_sayforsecs("e + pi: " .. e + pi, 0.5)
 
@@ -159,25 +159,9 @@ if (a != b) looks_sayforsecs("a != b", 0.5)
 else looks_sayforsecs("a == b", 0.5)
 ```
 
-### 循环
-
-```plain
-var i = 0
-while (i <= 5) {  // 重复执行直到 i <= 5 不成立
-	looks_sayforsecs(i, 0.5)
-	i += 1
-}
-
-var j = 0
-until (j > 5) {  // 重复执行直到 j > 5
-	looks_sayforsecs(j, 0.5)
-	j += 1
-}
-```
-
 ### 函数（暂不支持返回值）
 
-```plain
+```scl
 /**
  * 说a，b秒（只是一个例子）
  */
@@ -193,7 +177,7 @@ test_function("Hello world", inf)
 
 ### 克隆体
 
-```plain
+```scl
 clone {
     // 克隆体的代码
     looks_say("Hello, world! #1");
@@ -203,4 +187,106 @@ clone {
     looks_say("Hello, world! #2");
 }
 // 两个克隆体的代码不会互相影响
+```
+
+### 列表
+
+#### 列表字面量
+
+```scl
+// 第一种：直接书写列表元素
+array foo = [1, 2, 3];
+
+// 第二种：生成区间列表（仅适用于数字）
+array bar = 1 -> 5;  // 等同于 [1, 2, 3, 4, 5]
+
+// 第三种：通过运算（不是本节讨论的范围）
+```
+
+#### 创建列表
+
+定义列表的关键字为 `array`，其余语法和定义变量相同。
+
+```scl
+// 创建列表（不建议）
+// 由于 Scratch 有机制：重启之后列表项目不会删除
+array foo;
+
+// 创建列表（推荐）
+// 给予默认值
+array bar = [];
+```
+
+#### 增加元素
+
+列表支持通过 `+` 运算符快速增加元素。
+
+```scl
+// 更简洁的语法，适合多个元素
+// 但是编译之后积木比较多，可能产生效率问题
+foo += [1, 2, 3]
+
+// 较为复杂的语法，适合单个元素
+// 效率相比起来较高
+data_addtolist(foo, 1)
+data_addtolist(foo, 2)
+data_addtolist(foo, 3)
+```
+
+#### 删除元素
+
+本操作直接对应积木块 `data_deleteoflist`，只是起了一个别名。
+
+```scl
+// 删除第一个元素
+delete foo[1]
+
+// 同上，不推荐使用
+data_deleteoflist(foo, 1)
+```
+
+#### 更改元素
+
+本操作直接对应积木块 `data_replaceitemoflist`，只是起了一个别名。
+
+```scl
+// 更改第一个元素为 10
+foo[1] = 10
+
+// 同上，不推荐使用
+data_replaceitemoflist(foo, 1, 10)
+```
+
+#### 获取元素
+
+本操作直接对应积木块 `data_itemoflist`，只是起了一个别名。
+
+```scl
+// 获取第一个元素
+const a = foo[1]
+
+// 同上，不推荐使用
+const b = data_itemoflist(foo, 1)
+```
+
+### 循环
+
+循环分为 `while` 循环、`until` 循环和 `for` 循环。
+
+```scl
+var i = 0
+while (i <= 5) {  // 重复执行直到 i <= 5 不成立
+	looks_sayforsecs(i, 0.5)
+	i += 1
+}
+
+var j = 0
+until (j > 5) {  // 重复执行直到 j > 5
+	looks_sayforsecs(j, 0.5)
+	j += 1
+}
+
+for (k = 1 -> 5) {  // 仅适用于遍历列表
+    looks_sayforsecs(k, 0.5)
+}
 ```

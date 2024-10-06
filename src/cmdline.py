@@ -1,3 +1,5 @@
+# Deprecated!
+
 """
 Example usage:
 python cmdline.py -infile test.scl -outfile project.json
@@ -15,7 +17,7 @@ def run_command(args: list[str]):
     parser = Parser()
     interpreter = Interpreter()
 
-    print('[Scratch.py] Alpha 0.1')
+    print('[Scratch.py] version 1.0')
     print()
 
     params = {}
