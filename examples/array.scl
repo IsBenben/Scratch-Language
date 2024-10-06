@@ -1,6 +1,10 @@
-const TIME = 0.5;
-array a = [1, 2, 3, 4, 5];
-array b = a;  // copy a array
-b[1] = 10;
-looks_sayforsecs(b[1], TIME);
-looks_sayforsecs(a[1], TIME);
+// 创建
+array arr_1 = [1, 2, 3];
+// 增加
+arr_1 += [4, 5, 6];
+// 删除
+delete arr_1[1];
+// 修改
+arr_1[1] = 10;
+// 查询
+const result = arr_1[1];

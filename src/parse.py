@@ -110,6 +110,8 @@ class Parser:
                 return self.parse_function_declaration(tokens)
             if keyword == 'clone':
                 return self.parse_clone_statement(tokens)
+            if keyword == 'delete':
+                return self.parse_delete(tokens)
         statement = self.parse_join_expression(tokens)
         self.eat(tokens, TokenType.STATEMENT_END)
         return statement
@@ -196,16 +198,13 @@ class Parser:
                     #     result.append(right[i])
                     self.record.block.extend([
                         self.record.variable_declaration(result.name, False, True),
-                        self.record.variable_declaration(index.name, False, True),
+                        self.record.variable_declaration(index.name, False, False),
                         FunctionCall('data_setvariableto', [index, Number(0)]),
                         FunctionCall('control_repeat', [
                             FunctionCall('data_lengthoflist', [left]),
                             Block([
                                 FunctionCall('data_changevariableby', [index, Number(1)]),
-                                FunctionCall('data_addtolist', [result, FunctionCall('data_itemoflist', [
-                                    left,
-                                    FunctionCall('data_itemoflist', [left, index])
-                                ])])
+                                FunctionCall('data_addtolist', [result, FunctionCall('data_itemoflist', [left, index])])
                             ])
                         ]),
                         FunctionCall('data_setvariableto', [index, Number(0)]),
@@ -213,10 +212,7 @@ class Parser:
                             FunctionCall('data_lengthoflist', [right]),
                             Block([
                                 FunctionCall('data_changevariableby', [index, Number(1)]),
-                                FunctionCall('data_addtolist', [result, FunctionCall('data_itemoflist', [
-                                    right,
-                                    FunctionCall('data_itemoflist', [right, index])
-                                ])])
+                                FunctionCall('data_addtolist', [result, FunctionCall('data_itemoflist', [right, index])])
                             ])
                         ]),
                     ])
@@ -390,10 +386,7 @@ class Parser:
                         FunctionCall('data_lengthoflist', [expression]),
                         Block([
                             FunctionCall('data_changevariableby', [index, Number(1)]),
-                            FunctionCall('data_addtolist', [identifier, FunctionCall('data_itemoflist', [
-                                expression,
-                                FunctionCall('data_itemoflist', [expression, index])
-                            ])])
+                            FunctionCall('data_addtolist', [identifier, FunctionCall('data_itemoflist', [expression, index])])
                         ])
                     ]),
                 ])
@@ -410,10 +403,7 @@ class Parser:
                         FunctionCall('data_lengthoflist', [expression]),
                         Block([
                             FunctionCall('data_changevariableby', [index, Number(1)]),
-                            FunctionCall('data_addtolist', [identifier, FunctionCall('data_itemoflist', [
-                                expression,
-                                FunctionCall('data_itemoflist', [expression, index])
-                            ])])
+                            FunctionCall('data_addtolist', [identifier, FunctionCall('data_itemoflist', [expression, index])])
                         ])
                     ]),
                 ])
@@ -459,15 +449,19 @@ class Parser:
         return FunctionCall('control_repeat_until', [condition, sub_stack])
 
     def parse_function_declaration(self, tokens: list[Token]) -> FunctionDeclaration:
+        assert self.record is not None
+
         self.eat(tokens)  # eat TokenType.KEYWORD
         name = self.parse_identifier(tokens).name
         self.eat(tokens, TokenType.LEFT_PAREN)
         params = []
         if tokens[0].type != TokenType.RIGHT_PAREN:
             params.append(self.parse_identifier(tokens).name)
+            self.record.variable_declaration(params[-1], False, False)
             while tokens[0].type == TokenType.COMMA:
                 self.eat(tokens)  # eat TokenType.COMMA
                 params.append(self.parse_identifier(tokens).name)
+                self.record.variable_declaration(params[-1], False, False)
         self.eat(tokens, TokenType.RIGHT_PAREN)
         sub_stack = Block(self.parse_statement(tokens))
         return FunctionDeclaration(name, params, sub_stack)
@@ -476,3 +470,13 @@ class Parser:
         self.eat(tokens)  # eat TokenType.KEYWORD
         clone = Block(self.parse_statement(tokens))
         return Clone(clone)
+
+    def parse_delete(self, tokens: list[Token]) -> FunctionCall:
+        self.eat(tokens)  # eat TokenType.KEYWORD
+        name = self.parse_identifier(tokens)
+        if not isinstance(name, ListIdentifier):
+            raise_error(Error('Parse', f'Expected a list identifier, got "{name}"'))
+        self.eat(tokens, TokenType.SUBSCRIPT_LEFT)
+        index = self.parse_join_expression(tokens)
+        self.eat(tokens, TokenType.SUBSCRIPT_RIGHT)
+        return FunctionCall('data_deleteoflist', [name, index])

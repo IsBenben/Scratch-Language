@@ -7,11 +7,17 @@ class Node:
     def node_type_name(self) -> str:
         return type(self).__name__
     
+    def dump(self, indent=''):
+        return ''
+
     @staticmethod
     def dump_list(list, indent='') -> str:
         result = indent + '[\n'
         for item in list:
-            result += item.dump(indent + INDENT)
+            if isinstance(item, Node):
+                result += item.dump(indent + INDENT)
+            else:
+                result += indent + INDENT + item + '\n'
         result += indent + ']\n'
         return result
 
@@ -97,6 +103,7 @@ class VariableDeclaration(Statement):
         result += indent + INDENT + '[bool] ' + str(self.is_const) + '\n'
         result += indent + INDENT + '[bool] ' + str(self.is_array) + '\n'
         result += indent + '}\n'
+        return result
 
 class FunctionDeclaration(Statement):
     def __init__(self, name: str, args: list[str], body: Block):
