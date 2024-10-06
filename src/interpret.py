@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from error import Error, raise_error
-from nodes import Block, NodeVisitor, FunctionDeclaration
+from nodes import Block, ListIdentifier, NodeVisitor, FunctionDeclaration
 from records import Record
 from typing import Optional, Literal
 from utils import generate_id
@@ -39,16 +39,24 @@ class BlockType:
 BLOCK_TYPES: dict[str, BlockType] = {
     'control_create_clone_of': BlockType(inputs=(Input(name='CLONE_OPTION', type='shadow'),)),
     'control_create_clone_of_menu': BlockType(fields=('CLONE_OPTION',), shadow=True),
+    'control_delete_this_clone': BlockType(),
     'control_if': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
                                     Input(name='SUBSTACK', type='block'))),
     'control_if_else': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
                                          Input(name='SUBSTACK', type='block'),
                                          Input(name='SUBSTACK2', type='block'))),
+    'control_repeat': BlockType(inputs=(Input(name='TIMES'),
+                                        Input(name='SUBSTACK', type='block'))),
     'control_repeat_until': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
                                               Input(name='SUBSTACK', type='block'))),
     'control_wait': BlockType(inputs=('DURATION',)),
     'data_changevariableby': BlockType(inputs=('VALUE',), fields=('VARIABLE',)),
     'data_setvariableto': BlockType(inputs=('VALUE',), fields=('VARIABLE',)),
+    'data_deletealloflist': BlockType(fields=('LIST',)),
+    'data_addtolist': BlockType(inputs=('ITEM',), fields=('LIST',)),
+    'data_lengthoflist': BlockType(fields=('LIST',)),
+    'data_itemoflist': BlockType(inputs=('INDEX',), fields=('LIST',)),
+    'data_replaceitemoflist': BlockType(inputs=('INDEX', 'ITEM'), fields=('LIST',)),
     'looks_say': BlockType(inputs=('MESSAGE',)),
     'looks_sayforsecs': BlockType(inputs=('MESSAGE', 'SECS')),
     'looks_think': BlockType(inputs=('MESSAGE',)),
@@ -80,6 +88,7 @@ class Interpreter(NodeVisitor):
         self.project: dict = json.load(open('./src/model.json', encoding='utf-8'))
         self.blocks: dict[str, dict] = self.project['targets'][1]['blocks']
         self.variables: dict[str, list[str]] = self.project['targets'][0]['variables']
+        self.lists: dict[str, list[str | list]] = self.project['targets'][0]['lists']
         self.parent_function: Optional[FunctionDeclaration] = None
         self.clone_variable = generate_id(('variable', 'clone', None))
         self.project['targets'][1]['variables'][self.clone_variable] = [self.clone_variable, '[NOT ASSIGNED]']
@@ -164,7 +173,10 @@ class Interpreter(NodeVisitor):
     def visit_VariableDeclaration(self, node) -> None:
         self.record.declare_variable('variable', node.name, node.is_const)
         variable_id = generate_id(('variable', node.name, self.record))
-        self.variables[variable_id] = [variable_id, '[NOT ASSIGNED]']
+        if node.is_array:
+            self.lists[variable_id] = [variable_id, []]
+        else:
+            self.variables[variable_id] = [variable_id, '[NOT ASSIGNED]']
     
     def visit_String(self, node) -> String:
         return String(node.value)
@@ -381,3 +393,6 @@ class Interpreter(NodeVisitor):
         self.blocks[statement_start]['parent'] = event_id
         event['next'] = statement_start
         return self.visit_Block(node.parent)
+
+    def visit_ListIdentifier(self, node) -> ListIdentifier:
+        return ListIdentifier(node.name, self.record.resolve_variable(node.name))

@@ -1,0 +1,6 @@
+const TIME = 0.5;
+array a = [1, 2, 3, 4, 5];
+array b = a;  // copy a array
+b[1] = 10;
+looks_sayforsecs(b[1], TIME);
+looks_sayforsecs(a[1], TIME);

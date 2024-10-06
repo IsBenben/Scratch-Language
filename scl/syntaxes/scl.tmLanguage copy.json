@@ -3,83 +3,333 @@
   "name": "Scratch Lang",
   "patterns": [
     {
-      "include": "#keywords"
-    },
-    {
-      "include": "#strings"
-    },
-    {
-      "include": "#comments"
-    },
-    {
-      "include": "#variable"
-    },
-    {
-      "include": "#constant"
-    },
-    {
-      "include": "#storage"
+      "include": "#program"
     }
   ],
   "repository": {
-    "keywords": {
+    "program": {
       "patterns": [
         {
-          "name": "keyword.control.scl",
-          "match": "\\b(if|else|while|until|clone)\\b"
+          "begin": "(/\\*)",
+          "end": "(\\*/)",
+          "name": "comment.block.scl"
         },
         {
-          "name": "keyword.operator.scl",
-          "match": "\\b(in|contains)\\b"
+          "match": "//.*",
+          "name": "comment.line.double-slash.scl"
+        },
+        {
+          "include": "#statement"
         }
       ]
     },
-    "strings": {
-      "name": "string.quoted.double.scl",
-      "begin": "\"",
-      "end": "\""
-    },
-    "comments": {
+    "statement": {
       "patterns": [
         {
-          "name": "comment.double-slash.scl",
-          "match": "//[^\\n\\r]*"
+          "match": "(;)",
+          "name": "punctuation.terminator.statement.scl"
         },
         {
-          "name": "comment.block.scl",
-          "match": "/\\*(.|\\n|\\r)*?\\*/"
+          "include": "#block"
+        },
+        {
+          "include": "#assignment"
+        },
+        {
+          "include": "#if_statement"
+        },
+        {
+          "include": "#repeat_statement"
+        },
+        {
+          "include": "#function_declaration"
+        },
+        {
+          "include": "#clone_statement"
+        },
+        {
+          "include": "#join_expression"
         }
       ]
     },
-    "variable": {
+    "block": {
+      "begin": "(\\{)",
+      "end": "(\\})",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.block.begin.scl"
+        }
+      },
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.block.end.scl"
+        }
+      },
       "patterns": [
         {
-			"name": "variable.scl",
-			"match": "\\b[a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*\\b"
-		  },
-		  {
-			"name": "variable.language.scl",
-			"match": "\\b(inf|pi|e)\\b"
-		  }
-      ]
-    },
-    "constant": {
-      "patterns": [
-        {
-          "name": "constant.numeric.scl",
-          "match": "[1-9]\\d*\\.\\d*|0?\\.\\d+|0b[0-1]+|0o[0-7]+|0x[0-9a-fA-F]+|[1-9]\\d*|0"
-        },
-        {
-          "name": "constant.language.scl",
-          "match": "\\b(true|false)\\b"
+          "include": "#statement"
         }
       ]
     },
-    "storage": {
+    "and_expression": {
       "patterns": [
         {
-          "name": "storage.type.scl",
-          "match": "\\b(const|var|function)\\b"
+          "match": "(&&)",
+          "name": "keyword.operator.logical.and.scl"
+        },
+        {
+          "include": "#or_expression"
+        }
+      ]
+    },
+    "or_expression": {
+      "patterns": [
+        {
+          "match": "(\\|\\|)",
+          "name": "keyword.operator.logical.or.scl"
+        },
+        {
+          "include": "#comparison_expression"
+        }
+      ]
+    },
+    "comparison_expression": {
+      "patterns": [
+        {
+          "match": "(\\()",
+          "name": "punctuation.parenthesis.open.scl"
+        },
+        {
+          "match": "(\\))",
+          "name": "punctuation.parenthesis.close.scl"
+        },
+        {
+          "match": "(==|!=|<=|>=|<|>)",
+          "name": "keyword.operator.comparison.scl"
+        },
+        {
+          "match": "(!)",
+          "name": "keyword.operator.logical.not.scl"
+        },
+        {
+          "include": "#additive_expression"
+        }
+      ]
+    },
+    "factor": {
+      "patterns": [
+        {
+          "match": "0b[0-1]+|0o[0-7]+|0x[0-9a-fA-F]+|[1-9]\\d*|0|[1-9]\\d*\\.\\d*|0?\\.\\d+",
+          "name": "constant.numeric.scl"
+        },
+        {
+          "match": "(\\()",
+          "name": "punctuation.parenthesis.open.scl"
+        },
+        {
+          "match": "(\\))",
+          "name": "punctuation.parenthesis.close.scl"
+        },
+        {
+          "match": "\".*?\"",
+          "name": "string.quoted.double.scl"
+        },
+        {
+          "include": "#function_call"
+        },
+        {
+          "include": "#identifier"
+        },
+        {
+          "match": "(-|\\+)",
+          "name": "keyword.operator.arithmetic.scl"
+        }
+      ]
+    },
+    "identifier": {
+      "match": "[a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*",
+      "name": "variable.other.scl"
+    },
+    "join_expression": {
+      "patterns": [
+        {
+          "include": "#additive_expression"
+        },
+        {
+          "match": "(\\.\\.)",
+          "name": "keyword.operator.join.scl"
+        }
+      ]
+    },
+    "additive_expression": {
+      "patterns": [
+        {
+          "include": "#multiplicative_expression"
+        },
+        {
+          "match": "(\\+|-)",
+          "name": "keyword.operator.arithmetic.scl"
+        }
+      ]
+    },
+    "multiplicative_expression": {
+      "patterns": [
+        {
+          "include": "#subscript_expression"
+        },
+        {
+          "match": "(/|\\*|\\%)",
+          "name": "keyword.operator.arithmetic.scl"
+        }
+      ]
+    },
+    "subscript_expression": {
+      "patterns": [
+        {
+          "include": "#factor"
+        },
+        {
+          "include": "#join_expression"
+        }
+      ]
+    },
+    "function_call": {
+      "patterns": [
+        {
+          "include": "#identifier"
+        },
+        {
+          "match": "(\\()",
+          "name": "punctuation.parenthesis.open.scl"
+        },
+        {
+          "include": "#expression"
+        },
+        {
+          "match": "(,)",
+          "name": "punctuation.separator.arguments.scl"
+        },
+        {
+          "match": "(\\))",
+          "name": "punctuation.parenthesis.close.scl"
+        }
+      ]
+    },
+    "assignment": {
+      "begin": "(const|var|)",
+      "beginCaptures": {
+        "1": {
+          "name": "storage.type.scl"
+        }
+      },
+      "end": "",
+      "patterns": [
+        {
+          "include": "#identifier"
+        },
+        {
+          "match": "(=|\\+=|-=|\\*=|/=|%=)",
+          "name": "keyword.operator.assignment.scl"
+        },
+        {
+          "include": "#expression"
+        }
+      ]
+    },
+    "if_statement": {
+      "begin": "(if)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.if.scl"
+        }
+      },
+      "end": "",
+      "patterns": [
+        {
+          "match": "(\\()",
+          "name": "punctuation.parenthesis.open.scl"
+        },
+        {
+          "include": "#expression"
+        },
+        {
+          "match": "(\\))",
+          "name": "punctuation.parenthesis.close.scl"
+        },
+        {
+          "include": "#statement"
+        },
+        {
+          "match": "(else)",
+          "name": "keyword.control.else.scl"
+        }
+      ]
+    },
+    "repeat_statement": {
+      "begin": "(while|until)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.repeat.scl"
+        }
+      },
+      "end": "",
+      "patterns": [
+        {
+          "match": "(\\()",
+          "name": "punctuation.parenthesis.open.scl"
+        },
+        {
+          "include": "#expression"
+        },
+        {
+          "match": "(\\))",
+          "name": "punctuation.parenthesis.close.scl"
+        },
+        {
+          "include": "#statement"
+        }
+      ]
+    },
+    "function_declaration": {
+      "begin": "(function)",
+      "beginCaptures": {
+        "1": {
+          "name": "storage.type.function.scl"
+        }
+      },
+      "end": "",
+      "patterns": [
+        {
+          "include": "#identifier"
+        },
+        {
+          "match": "(\\()",
+          "name": "punctuation.parenthesis.open.scl"
+        },
+        {
+          "match": "(,)",
+          "name": "punctuation.separator.parameters.scl"
+        },
+        {
+          "match": "(\\))",
+          "name": "punctuation.parenthesis.close.scl"
+        },
+        {
+          "include": "#statement"
+        }
+      ]
+    },
+    "clone_statement": {
+      "begin": "(clone)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.clone.scl"
+        }
+      },
+      "end": "",
+      "patterns": [
+        {
+          "include": "#statement"
         }
       ]
     }

@@ -19,7 +19,7 @@
     "grammars": [{
       "language": "scl",
       "scopeName": "source.scl",
-      "path": "./syntaxes/scl.tmLanguage copy 3.json"
+      "path": "./syntaxes/scl.tmLanguage.json"
     }]
   }
 }

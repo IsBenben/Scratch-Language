@@ -10,6 +10,15 @@
     "program": {
       "patterns": [
         {
+          "begin": "(/\\*)",
+          "end": "(\\*/)",
+          "name": "comment.block.scl"
+        },
+        {
+          "match": "//.*",
+          "name": "comment.line.double-slash.scl"
+        },
+        {
           "include": "#statement"
         }
       ]
@@ -17,30 +26,45 @@
     "statement": {
       "patterns": [
         {
-          "include": "#factor"
+          "match": "(;)",
+          "name": "punctuation.terminator.statement.scl"
+        },
+        {
+          "include": "#block"
+        },
+        {
+          "include": "#if_statement"
+        },
+        {
+          "include": "#repeat_statement"
+        },
+        {
+          "include": "#function_declaration"
+        },
+        {
+          "include": "#clone_statement"
+        },
+        {
+          "include": "#join_expression"
         }
       ]
     },
     "block": {
+      "begin": "(\\{)",
+      "end": "(\\})",
+      "beginCaptures": {
+        "1": {
+          "name": "punctuation.definition.block.begin.scl"
+        }
+      },
+      "endCaptures": {
+        "1": {
+          "name": "punctuation.definition.block.end.scl"
+        }
+      },
       "patterns": [
         {
-          "begin": "(\\{)",
-          "end": "(\\})",
-          "beginCaptures": {
-            "1": {
-              "name": "punctuation.definition.block.begin.scl"
-            }
-          },
-          "endCaptures": {
-            "1": {
-              "name": "punctuation.definition.block.end.scl"
-            }
-          },
-          "patterns": [
-            {
-              "include": "#statement"
-            }
-          ]
+          "include": "#statement"
         }
       ]
     },
@@ -189,11 +213,14 @@
       ]
     },
     "assignment": {
-      "patterns": [
-        {
-          "match": "(const|var)",
+      "begin": "(const|var)",
+      "beginCaptures": {
+        "1": {
           "name": "storage.type.scl"
-        },
+        }
+      },
+      "end": "",
+      "patterns": [
         {
           "include": "#identifier"
         },
@@ -207,11 +234,14 @@
       ]
     },
     "if_statement": {
-      "patterns": [
-        {
-          "match": "(if)",
+      "begin": "(if)",
+      "beginCaptures": {
+        "1": {
           "name": "keyword.control.if.scl"
-        },
+        }
+      },
+      "end": "",
+      "patterns": [
         {
           "match": "(\\()",
           "name": "punctuation.parenthesis.open.scl"
@@ -233,11 +263,14 @@
       ]
     },
     "repeat_statement": {
-      "patterns": [
-        {
-          "match": "(while|until)",
+      "begin": "(while|until)",
+      "beginCaptures": {
+        "1": {
           "name": "keyword.control.repeat.scl"
-        },
+        }
+      },
+      "end": "",
+      "patterns": [
         {
           "match": "(\\()",
           "name": "punctuation.parenthesis.open.scl"
@@ -255,11 +288,14 @@
       ]
     },
     "function_declaration": {
-      "patterns": [
-        {
-          "match": "(function)",
+      "begin": "(function)",
+      "beginCaptures": {
+        "1": {
           "name": "storage.type.function.scl"
-        },
+        }
+      },
+      "end": "",
+      "patterns": [
         {
           "include": "#identifier"
         },
@@ -281,13 +317,16 @@
       ]
     },
     "clone_statement": {
+      "begin": "(clone)",
+      "beginCaptures": {
+        "1": {
+          "name": "keyword.control.clone.scl"
+        }
+      },
+      "end": "",
       "patterns": [
         {
-          "match": "(clone)",
-          "name": "keyword.control.clone.scl"
-        },
-        {
-          "include": "#expression"
+          "include": "#statement"
         }
       ]
     }

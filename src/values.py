@@ -103,3 +103,16 @@ class Custom(Value):
 
     def get_as_field(self) -> list:
         return [self.value, None]
+
+class ListIdentifier(Value):
+    value: tuple[str, Record | None]  # (name, record)
+
+    def __init__(self, name: str, record: Record | None):
+        super().__init__((name, record))
+
+    @property
+    def id(self) -> str:
+        return generate_id(('variable', self.value[0], self.value[1]))
+
+    def get_as_field(self) -> list:
+        return [self.id, self.id]

@@ -84,14 +84,18 @@ class FunctionCall(Factor):
         return result
 
 class VariableDeclaration(Statement):
-    def __init__(self, name: str, is_const: bool):
+    def __init__(self, name: str, is_const: bool, is_array: bool):
         self.name: str = name
+        if is_const and is_array:
+            raise ValueError('Variable cannot be both constant and an array')
         self.is_const: bool = is_const
+        self.is_array: bool = is_array
     
     def dump(self, indent=''):
         result = indent + 'VariableDeclaration {\n'
         result += indent + INDENT + '[str] ' + self.name + '\n'
         result += indent + INDENT + '[bool] ' + str(self.is_const) + '\n'
+        result += indent + INDENT + '[bool] ' + str(self.is_array) + '\n'
         result += indent + '}\n'
 
 class FunctionDeclaration(Statement):
@@ -140,6 +144,10 @@ class Clone(Statement):
         result += indent + '}\n'
         return result
 
+class ListIdentifier(Identifier):
+    def __init__(self, name: str | Identifier):
+        self.name: str = name if isinstance(name, str) else name.name
+
 class NodeVisitor:
     def visit(self, node: Node):
         return getattr(self, 'visit_' + type(node).__name__, self.visit_error)(node)
@@ -181,6 +189,9 @@ class NodeVisitor:
         pass
 
     def visit_Clone(self, node: Clone):
+        pass
+
+    def visit_ListIdentifier(self, node: ListIdentifier):
         pass
 
     def visit_error(self, node: Node):
