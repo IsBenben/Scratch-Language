@@ -1,12 +1,14 @@
-# Scratch.py
-
-**这只是一个临时起性子的空壳子！没有什么实际意义。**
-
-Scratch-Language.
+# Scratch-Language
 
 ## 介绍
 
-Scratch.py是Python制作的编程语言，它的编译器可以将你写的源代码转换为Scratch的project.json文件。
+用Python为Scratch做的编程语言。包括词法分析、语法分析、编译器。
+
+编译成品为Scratch可直接识别的project.json。
+
+已经支持基本的语法。包括注释、函数、变量、判断、运算、列表、循环。
+
+视频：<https://www.bilibili.com/video/BV1G31iY3ETX>
 
 ## 使用
 
