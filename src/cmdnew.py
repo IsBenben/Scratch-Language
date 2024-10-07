@@ -12,9 +12,11 @@ import sys
 import argparse
 import zipfile
 import shutil
+import os
 
 sys.setrecursionlimit(2000)
 
+folder = os.path.dirname(__file__)
 parser = Parser()
 interpreter = Interpreter()
 
@@ -56,11 +58,10 @@ try:
     elif args.ast:
         outfile.write(parser.parse(incode).dump())
     elif args.sb3:
-        #将project.json添加进default.zip并重命名为.sb3
         if outfile == sys.stdout:
             raise TypeError('二进制文件不能输出到标准输出')
         interpreter.visit(parser.parse(incode))
-        shutil.copyfile('src/default.zip', outfile.name)
+        shutil.copyfile(os.path.join(folder, 'default.zip'), outfile.name)
         with zipfile.ZipFile(outfile.name, 'a') as f:
             f.writestr('project.json', json.dumps(interpreter.project, separators=(',', ':')))
     elif args.tokens:

@@ -7,10 +7,12 @@ from utils import generate_id
 from values import *
 import json
 import math
+import os
 
 def json_with_settings(dump_fn, *args, **kwargs):
     return dump_fn(*args, **kwargs, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
+folder = os.path.dirname(__file__)
 PRO = 'procedure_'
 
 @dataclass
@@ -86,7 +88,7 @@ BLOCK_TYPES: dict[str, BlockType] = {
 class Interpreter(NodeVisitor):
     def __init__(self) -> None:
         self.record = Record()
-        self.project: dict = json.load(open('./src/model.json', encoding='utf-8'))
+        self.project: dict = json.load(open(os.path.join(folder, 'template.json'), encoding='utf-8'))
         self.blocks: dict[str, dict] = self.project['targets'][1]['blocks']
         self.variables: dict[str, list[str]] = self.project['targets'][0]['variables']
         self.lists: dict[str, list[str | list]] = self.project['targets'][0]['lists']
