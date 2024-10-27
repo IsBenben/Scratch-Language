@@ -66,8 +66,8 @@
     "vm": "0.2.0",
     "agent": "",
     "platform": {
-      "name": "Scratch.py",
-      "url": "https://github.com/IsBenben/Scratch.py"
+      "name": "Scratch-Language",
+      "url": "https://github.com/IsBenben/Scratch-Language"
     }
   }
 }

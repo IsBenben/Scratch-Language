@@ -19,6 +19,7 @@ class TokenType(Enum):
     KEYWORD = auto()
     LEFT_PAREN = auto()
     OPERATOR = auto()
+    PREPROCESSING = auto()
     RIGHT_PAREN = auto()
     STATEMENT_END = auto()
     STRING = auto()
@@ -37,6 +38,7 @@ TOKEN_REGEX: dict[TokenType, re.Pattern | str] = {
     TokenType.SUBSCRIPT_RIGHT: r'\]',
     TokenType.BLOCK_END: r'\}',
     TokenType.COMMA: r',',
+    TokenType.PREPROCESSING: '#',
     # \u4e00 - \u9fa5 is the unicode range of Chinese characters
     TokenType.IDENTIFIER: r'[a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*',
     TokenType.FLOAT: r'[1-9]\d*\.\d*|0?\.\d+',
@@ -78,13 +80,14 @@ def tokenize(code: str) -> list[Token]:
                 continue
             code = code[match.end():]
             value = match.group()
+            old_lineno = lineno
             lineno += value.count('\n')
             if token_type == TokenType.COMMENT:
                 break
             if token_type == TokenType.WHITE:
                 break
             if token_type == TokenType.STRING:
-                value = value[1:-1]
+                value = value[1:-1]  # Remove the quotes
             if token_type == TokenType.IDENTIFIER:
                 if value in ['in', 'contains']:
                     token_type = TokenType.COMPARE
@@ -92,7 +95,7 @@ def tokenize(code: str) -> list[Token]:
                                'true', 'false', 'function', 'clone', 'array',
                                'delete', 'for']:
                     token_type = TokenType.KEYWORD
-            tokens.append(Token(token_type, value, lineno))
+            tokens.append(Token(token_type, value, old_lineno))
             break
         if not match:
             raise_error(Error('Tokenize', f'Invalid or unexpected token on "{code[:5]}"'))

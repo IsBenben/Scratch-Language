@@ -1,5 +1,7 @@
 from __future__ import annotations
 from utils import generate_id
+import copy
+from typing import TypeVar
 
 INDENT = ' |  '
 
@@ -20,13 +22,26 @@ class Node:
                 result += indent + INDENT + item + '\n'
         result += indent + ']\n'
         return result
+    
+    # Support for "copy" module
+    @property
+    def _copy_keys(self):
+        return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+
+    def __copy__(self):
+        return type(self)(**self._copy_keys)
+
+    def __deepcopy__(self, memo):
+        return type(self)(**copy.deepcopy(self._copy_keys, memo))
 
 class Statement(Node):
     def dump(self, indent=''):
         return indent + 'Statement {N/A}\n'
 
+STATEMENT_TYPE = None | list[Statement] | Statement
+
 class Block(Statement):
-    def __init__(self, body: None | list[Statement] | Statement | Block = None):
+    def __init__(self, body: STATEMENT_TYPE | Block = None):
         if isinstance(body, Block):
             body = body.body
         if body is None:
@@ -135,7 +150,7 @@ class Clone(Statement):
             ]),
             clone,
         ])
-        self.parent = Block([
+        self._parent = Block([
             FunctionCall('data_setvariableto', [
                 Identifier(generate_id(('variable', 'clone', None))),
                 String(generate_id(('clone', self)))
@@ -154,6 +169,12 @@ class Clone(Statement):
 class ListIdentifier(Identifier):
     def __init__(self, name: str | Identifier):
         self.name: str = name if isinstance(name, str) else name.name
+
+class Macro(Statement):
+    def __init__(self, name: str, args: list[str], body: STATEMENT_TYPE):
+        self.name: str = name
+        self.args: list[str] = args
+        self.body: None | list[Statement] | Statement = body
 
 class NodeVisitor:
     def visit(self, node: Node):
