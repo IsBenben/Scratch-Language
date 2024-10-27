@@ -1,0 +1,5 @@
+// #include "examples/preprocess_test.scl"
+
+// 导入内置的库，不用加.scl，否则会报错
+#include <pen>
+looks_say(rgb(1, 2, 3));

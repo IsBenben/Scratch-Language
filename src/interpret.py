@@ -395,7 +395,7 @@ class Interpreter(NodeVisitor):
         statement_start = block.get_start_end()[0]
         self.blocks[statement_start]['parent'] = event_id
         event['next'] = statement_start
-        return self.visit_Block(node.parent)
+        return self.visit_Block(node._parent)
 
     def visit_ListIdentifier(self, node) -> ListIdentifier:
         return ListIdentifier(node.name, self.record.resolve_variable(node.name))

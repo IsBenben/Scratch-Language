@@ -2,7 +2,7 @@ from __future__ import annotations
 from tokens import TokenType, tokenize, Token
 from nodes import *
 from error import Error, raise_error
-from typing import Optional, NoReturn, Any, Callable
+from typing import Optional, NoReturn, Any, Callable, TypeVar
 
 sign_to_english = {
     '+': 'add',
@@ -27,7 +27,12 @@ inverse_sign = {
     '>=': '<',
 }
 
-def extend_or_append(list_: list, value: list | Any):
+# Must use string?
+ClassInfo = type | tuple['ClassInfo', ...]
+
+# TODO: Change type of "value"
+T = TypeVar('T', bound=list)
+def extend_or_append(list_: T, value: T | Any) -> T:
     if isinstance(value, list):
         list_.extend(value)
     else:
@@ -38,27 +43,44 @@ class Record:
     def __init__(self, block: list[Statement], parent: Record | None = None):
         self.block = block
         self.variables: dict[str, VariableDeclaration] = {}
+        self.functions: dict[str, FunctionDeclaration] = {}
+        self.namespaces: dict[str, Record] = {}
         self.parent: Record | None = parent
     
     def variable_declaration(self, name: str, *args, **kwargs):
         result = VariableDeclaration(name, *args, **kwargs)
         self.variables[name] = result
         return result
+    
+    def function_declaration(self, name: str, *args, **kwargs):
+        result = FunctionDeclaration(name, *args, **kwargs)
+        self.functions[name] = result
+        return result
+    
+    def namespace_append(self, name: str, record: Record):
+        if name in self.namespaces:
+            raise_error(Error('Parse', f'Namespace "{name}" already exists'))
+        self.namespaces[name] = record
 
-    def resolve(self, name: str) -> VariableDeclaration | None:
-        # Check error in interpret, not in parse
+    def resolve(self, name: str) -> VariableDeclaration | FunctionDeclaration | Macro | None:
+        # Check error in interpret, not in parse,
+        # unless it's a macro or a namespace (it's only exists in parse)
         if name in self.variables:
             return self.variables[name]
+        if name in self.functions:
+            return self.functions[name]
         if self.parent is not None:
             return self.parent.resolve(name)
         return None
 
 class Parser:
-    def parse(self, code: str) -> Program:
+    def parse(self, tokens: str | list[Token]) -> Program:
         self.record: Record | None = None
-        return self.parse_program(tokenize(code))
+        if isinstance(tokens, str):
+            tokens = tokenize(tokens)
+        return self.parse_program(tokens)
     
-    def eat(self, tokens: list[Token], type: Optional[TokenType]=None) -> Token:
+    def eat(self, tokens: list[Token], type: Optional[TokenType] = None) -> Token:
         if type is None:
             return tokens.pop(0)
         if tokens[0].type == type:
@@ -89,34 +111,43 @@ class Parser:
         self.record = old_record
         return block
 
-    def parse_statement(self, tokens: list[Token]) -> Statement | list[Statement] | None:
+    def parse_statement(self, tokens: list[Token]) -> STATEMENT_TYPE:
+        assert self.record is not None
+
+        # Special case
         if tokens[0].type == TokenType.STATEMENT_END:
-            self.eat(tokens)
-            return None
-        if tokens[0].type == TokenType.BLOCK_START:
-            return self.parse_block(tokens)
-        if len(tokens) >= 2 and tokens[1].type == TokenType.ASSIGNMENT:
-            return self.parse_assignment(tokens)
+            result = None
+        elif tokens[0].type == TokenType.BLOCK_START:
+            result = self.parse_block(tokens)
+        elif len(tokens) >= 2 and tokens[1].type == TokenType.ASSIGNMENT:
+            result = self.parse_assignment(tokens)
         
-        if tokens[0].type == TokenType.KEYWORD:
+        # Keywords sign
+        elif tokens[0].type == TokenType.KEYWORD:
             keyword = tokens[0].value
             if keyword in ['var', 'const', 'array']:
-                return self.parse_assignment(tokens)
+                result = self.parse_assignment(tokens)
             if keyword == 'if':
-                return self.parse_if_statement(tokens)
+                result = self.parse_if_statement(tokens)
             if keyword in ['while', 'until']:
-                return self.parse_repeat_statement(tokens)
+                result = self.parse_repeat_statement(tokens)
             if keyword == 'function':
-                return self.parse_function_declaration(tokens)
+                result = self.parse_function_declaration(tokens)
             if keyword == 'clone':
-                return self.parse_clone_statement(tokens)
+                result = self.parse_clone_statement(tokens)
             if keyword == 'delete':
-                return self.parse_delete(tokens)
+                result = self.parse_delete(tokens)
             if keyword == 'for':
-                return self.parse_for_statement(tokens)
-        statement = self.parse_join_expression(tokens)
-        self.eat(tokens, TokenType.STATEMENT_END)
-        return statement
+                result = self.parse_for_statement(tokens)
+        
+        # Others: an expression
+        else:
+            result = self.parse_join_expression(tokens)
+            self.eat(tokens, TokenType.STATEMENT_END)
+        
+        while tokens[0].type == TokenType.STATEMENT_END:
+            self.eat(tokens)
+        return result
     
     # Deprecated!
     # def parse_expression(self, tokens: list[Token]) -> Expression:
@@ -290,8 +321,12 @@ class Parser:
         return left
 
     def parse_factor(self, tokens: list[Token]) -> Expression:
+        assert self.record is not None
+
         multiplier = 1
+        has_sign = False
         while tokens[0].type == TokenType.OPERATOR and tokens[0].value in ['+', '-']:
+            has_sign = True
             if self.eat(tokens).value == '-':
                 multiplier *= -1
         factor = None
@@ -311,6 +346,7 @@ class Parser:
             # Multiply on compiling
             factor = Number(int(value, base) * multiplier)
             multiplier = 1
+            has_sign = False
         elif tokens[0].type == TokenType.FLOAT:
             value = self.eat(tokens).value  # eat TokenType.FLOAT
             if value.endswith('.'):
@@ -319,6 +355,7 @@ class Parser:
                 value = '0' + value
             factor = Number(float(value) * multiplier)
             multiplier = 1
+            has_sign = False
         elif tokens[0].type == TokenType.LEFT_PAREN:
             self.eat(tokens)  # eat TokenType.LEFT_PAREN
             expression = self.parse_join_expression(tokens)
@@ -335,7 +372,7 @@ class Parser:
         else:  # No any factor found
             raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected a factor'))
         
-        if multiplier == 1:
+        if not has_sign:
             return factor
         return FunctionCall('operator_' + sign_to_english['*'], [factor, Number(multiplier)])
 
@@ -357,7 +394,7 @@ class Parser:
         if tokens[0].type == TokenType.IDENTIFIER:
             name = self.eat(tokens).value
             variable = self.record.resolve(name)
-            if variable and variable.is_array:
+            if isinstance(variable, VariableDeclaration) and variable.is_array:
                 return ListIdentifier(name)
             return Identifier(name)
         raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected an identifier (letters, "_", or numbers (not start))'))

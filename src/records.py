@@ -70,6 +70,7 @@ class Record:
         return False
 
     def has_function(self, name: str) -> bool:
+        # See method "has_variable"
         if name in self.functions:
             return True
         if self.parent is not None:
