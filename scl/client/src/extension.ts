@@ -176,7 +176,6 @@ export function activate(context: ExtensionContext) {
 
   const runCode = commands.registerCommand('scl.runCode', () => {
     const compilerPath = getSetting('compilerPath');
-    //检查是否存在编译器
     if (
       !path.isAbsolute(compilerPath) ||
       !fs.existsSync(compilerPath) ||
@@ -196,7 +195,13 @@ export function activate(context: ExtensionContext) {
       terminal = Window.createTerminal('Scratch Language');
     }
     terminal.show();
-    const filePath = editor.document.uri.fsPath; //获取VSCODE编辑器的文件
+    const a = Window.onDidCloseTerminal((e) => {
+      if (e === terminal) {
+        terminal = null;
+      }
+      a.dispose();
+    })
+    const filePath = editor.document.uri.fsPath;
     const outFilePath = path.join(
       path.dirname(filePath),
       path.basename(filePath, '.scl') + '.sb3'
