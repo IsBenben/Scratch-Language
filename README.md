@@ -2,7 +2,7 @@
 
 [![license](https://img.shields.io/github/license/IsBenben/Scratch-Language)](https://github.com/IsBenben/Scratch-Language/blob/main/LICENSE)
 [![commit](https://img.shields.io/github/last-commit/IsBenben/Scratch-Language)](https://github.com/IsBenben/Scratch-Language/commits/main)
-[![compiler-version](https://img.shields.io/badge/version-1.1.1-orange)](#)
+[![compiler-version](https://img.shields.io/badge/version-1.1.2-orange)](#)
 [![python-version](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue)](#)
 
 ## 介绍

@@ -27,6 +27,8 @@ inverse_sign = {
     '>=': '<',
 }
 
+valid_attributes = {'norefresh'}
+
 # Must use string?
 ClassInfo = type | tuple['ClassInfo', ...]
 
@@ -57,6 +59,7 @@ class Record:
         self.functions[name] = result
         return result
     
+    # TODO: implement namespaces
     def namespace_append(self, name: str, record: Record):
         if name in self.namespaces:
             raise_error(Error('Parse', f'Namespace "{name}" already exists'))
@@ -88,6 +91,7 @@ class Parser:
         raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected {type}'))
 
     def parse_program(self, tokens: list[Token]) -> Program:
+        self.no_new_record = None
         program = Program()
         old_record = self.record
         self.record = Record(program.body, old_record)
@@ -99,16 +103,24 @@ class Parser:
         return program
     
     def parse_block(self, tokens: list[Token]) -> Block:
+        assert self.record
+
+        no_new_record = self.no_new_record
         self.eat(tokens, TokenType.BLOCK_START)
-        block = Block()
-        old_record = self.record
-        self.record = Record(block.body, old_record)
+        if not no_new_record:
+            block = Block()
+            old_record = self.record
+            self.record = Record(block.body, old_record)
+        else:
+            block = no_new_record
+            self.no_new_record = None
         while tokens[0].type != TokenType.BLOCK_END:
             statement = self.parse_statement(tokens)
             if statement is not None:
                 extend_or_append(block.body, statement)
         self.eat(tokens, TokenType.BLOCK_END)
-        self.record = old_record
+        if not no_new_record:
+            self.record = old_record
         return block
 
     def parse_statement(self, tokens: list[Token]) -> STATEMENT_TYPE:
@@ -147,6 +159,7 @@ class Parser:
         
         while tokens[0].type == TokenType.STATEMENT_END:
             self.eat(tokens)
+        self.no_new_record = None
         return result
     
     # Deprecated!
@@ -222,11 +235,11 @@ class Parser:
                     # # Pseudo Code:
                     # result = []
                     # index = 0
-                    # while index < len(left):
+                    # for _ in range(len(left)):
                     #     index += 1
                     #     result.append(left[i]) # 1-based index in Scratch
                     # index = 0
-                    # while index < len(right):
+                    # for _ in range(len(right)):
                     #     index += 1
                     #     result.append(right[i])
                     self.record.block.extend([
@@ -386,7 +399,7 @@ class Parser:
                 self.eat(tokens)  # eat TokenType.COMMA   
                 params.append(self.parse_join_expression(tokens))
         self.eat(tokens, TokenType.RIGHT_PAREN)
-        return FunctionCall(name, params)
+        return FunctionCall(name, params, always_builtin=False)
 
     def parse_identifier(self, tokens: list[Token]) -> Identifier:
         assert self.record is not None
@@ -522,11 +535,29 @@ class Parser:
         return FunctionCall('control_repeat_until', [condition, sub_stack])
 
     def parse_function_declaration(self, tokens: list[Token]) -> FunctionDeclaration:
-        assert self.record is not None
+        attributes = set()
+        def parse_attributes() -> set[str]:
+            result = set()
+            if tokens[0].type == TokenType.KEYWORD \
+                   and tokens[0].value == 'attribute':
+                self.eat(tokens)  # eat TokenType.KEYWORD
+                self.eat(tokens, TokenType.LEFT_PAREN)  # must have least 1 attribute
+                result.add(self.parse_identifier(tokens).name)
+                while tokens[0].type == TokenType.COMMA:
+                    self.eat(tokens)  # eat TokenType.COMMA
+                    result.add(self.parse_identifier(tokens).name)
+                self.eat(tokens, TokenType.RIGHT_PAREN)
+            # else: pass  # No attributes, return empty set
+            return result & valid_attributes
 
         self.eat(tokens)  # eat TokenType.KEYWORD
+        attributes |= parse_attributes()
+        block = Block()
         old_record = self.record
+        self.record = Record(block.body, old_record)
+        self.no_new_record = block
         name = self.parse_identifier(tokens).name
+        attributes |= parse_attributes()
         self.eat(tokens, TokenType.LEFT_PAREN)
         params = []
         if tokens[0].type != TokenType.RIGHT_PAREN:
@@ -537,8 +568,10 @@ class Parser:
                 params.append(self.parse_identifier(tokens).name)
                 self.record.variable_declaration(params[-1], False, False)
         self.eat(tokens, TokenType.RIGHT_PAREN)
+        attributes |= parse_attributes()
         sub_stack = Block(self.parse_statement(tokens))
-        return FunctionDeclaration(name, params, sub_stack)
+        self.record = old_record
+        return FunctionDeclaration(name, params, sub_stack, list(attributes))
 
     def parse_clone_statement(self, tokens: list[Token]) -> Clone:
         self.eat(tokens)  # eat TokenType.KEYWORD

@@ -1,3 +1,8 @@
+#ifdef PEN
+#error "PEN is defined"
+#endif
+
+#define 0 PEN
 // 可定义多个重载
 #define (1 +  1)  a
 #define (2 +  2)  a()

@@ -11,6 +11,11 @@ from tokens import tokenize
 import json
 import sys
 
+print('该命令行已被弃用，仅是一个存档。')
+print('如果想使用旧版命令行，请删除14~15行（不推荐）')
+print('推荐：使用新的命令行cmdnew.py。')
+sys.exit(1)
+
 sys.setrecursionlimit(2000)
 
 def run_command(args: list[str]):

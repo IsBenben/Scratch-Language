@@ -3,7 +3,8 @@ from tokens import Token, TokenType, tokenize
 from error import Error, raise_error
 import os
 
-HEADER_PATH = os.path.join(os.path.dirname(__file__), '../includes')
+folder = os.path.dirname(__file__)
+HEADER_PATH = os.path.join(folder, '../includes')
 
 @dataclass
 class Define:
@@ -37,8 +38,14 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
     
     lines = list_split(tokens)
     defines: dict[str, dict[int, Define]] = {}  # "str" means name, "int" means params count
+    if_result = True
+    if_cnt = 0
     for i, line in enumerate(lines):
         if not line:
+            continue
+        if not if_result \
+               and (line[0].type != TokenType.PREPROCESSING or line[1].value != 'endif'):
+            line.clear()
             continue
         if line[0].type == TokenType.PREPROCESSING:
             if line[-1].type != TokenType.STATEMENT_END:
@@ -109,6 +116,8 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                 name_str = line[name].value
                 defines.setdefault(name_str, {})
                 params_count = -1 if params is None else len(params)
+                if params_count in defines[name_str]:
+                    raise_error(Error('Preprocessing', f'"{name_str}" is already defined (in directive {line[1].desc})'))
                 defines[name_str][params_count] = Define(line[2:name], params) 
             elif line[1].value == 'undef':
                 # #undef identifier
@@ -122,6 +131,27 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                 if len(line) != 3 or line[2].type != TokenType.STRING:
                     raise_error(Error('Preprocessing', f'The syntax of directive "{line[1].desc}" is invalid'))
                 raise_error(Error('Preprocessing', f'User error: {line[2].desc}'))
+            elif line[1].value == 'ifdef':
+                # #ifdef identifier
+                if len(line) != 3 or line[2].type != TokenType.IDENTIFIER:
+                    raise_error(Error('Preprocessing', f'The syntax of directive "{line[1].desc}" is invalid'))
+                if_cnt += 1
+                if line[2].value not in defines:
+                    if_result = False
+            elif line[1].value == 'ifndef':
+                # #ifndef identifier
+                if len(line) != 3 or line[2].type != TokenType.IDENTIFIER:
+                    raise_error(Error('Preprocessing', f'The syntax of directive "{line[1].desc}" is invalid'))
+                if_cnt += 1
+                if line[2].value in defines:
+                    if_result = False
+            elif line[1].value == 'endif':
+                if len(line) != 2:
+                    raise_error(Error('Preprocessing', f'The syntax of directive "{line[1].desc}" is invalid'))
+                if_cnt -= 1
+                if if_cnt < 0:
+                    raise_error(Error('Preprocessing', f'Cannot find the matching of "{line[1].desc}"'))
+                if_result = True
             else:
                 raise_error(Error('Preprocessing', f'Unknown directive "{line[1].desc}"'))
             line.clear()

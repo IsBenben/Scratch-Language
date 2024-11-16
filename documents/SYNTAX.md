@@ -165,6 +165,19 @@ function test_function(a, b) {
 test_function("Hello world", inf)
 ```
 
+### 修改属性
+
+函数使用 `attribute` 关键字修改属性。
+
+目前仅支持修改 “运行时不刷新屏幕”（`norefresh`）。
+
+```scl
+// 顺序不能错，可在不同位置写，但是一个位置只能写一个
+function attribute(norefresh) test_function() { /* 做一些事 */ }
+function test_function attribute(norefresh)() { /* 做一些事 */ }
+function test_function() attribute(norefresh) { /* 做一些事 */ }
+```
+
 ## 克隆体
 
 ```scl
@@ -332,4 +345,27 @@ const b = a;  // Error! 找不到a
 
 ```scl
 #error "This is an error!"  // Error! 展开时出错
+```
+
+### `#ifdef identifier`
+
+与 `#endif` 配合使用，可以嵌套。判断是否定义了某个预处理命令，如果定义了则展开。
+
+### `#ifndef identifier`
+
+与 `#endif` 配合使用，可以嵌套。判断是否没有定义某个预处理命令，如果没有定义则展开。与 `#ifdef` 相反。
+
+### `#endif`
+
+结束 `#ifdef` 或 `#ifndef` 的影响范围。
+
+```scl
+#ifdef a
+    looks_say("a is defined!")
+#endif
+
+#ifndef b
+    looks_say("b is not defined!")
+// 末尾可以省略 #endif（不建议，因为其他文件可能#include，但是影响范围会延续）
+#endif
 ```

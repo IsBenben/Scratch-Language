@@ -7,6 +7,8 @@ import {
   OutputChannel,
   WorkspaceFolder,
   Uri,
+  commands,
+  Terminal,
 } from 'vscode';
 
 import {
@@ -55,13 +57,14 @@ function getOuterMostWorkspaceFolder(folder: WorkspaceFolder): WorkspaceFolder {
   return folder;
 }
 
+let terminal: Terminal | null = null;
+
 export function activate(context: ExtensionContext) {
   const module = context.asAbsolutePath(
     path.join('server', 'out', 'server.js')
   );
-  const outputChannel: OutputChannel = Window.createOutputChannel(
-    'Scratch-Language'
-  );
+  const outputChannel: OutputChannel =
+    Window.createOutputChannel('Scratch-Language');
 
   function didOpenTextDocument(document: TextDocument): void {
     // We are only interested in language mode text
@@ -141,6 +144,24 @@ export function activate(context: ExtensionContext) {
       }
     }
   });
+  Workspace.onDidChangeConfiguration((event) => {
+    
+  })
+
+  const run = commands.registerCommand(
+    'scl.runCode',
+    (fileUri: Uri) => {
+      let isNewTerminal = false;
+      if (terminal === null) {
+          terminal = Window.createTerminal("Code");
+          isNewTerminal = true;
+      }
+      terminal.show();
+      terminal.sendText(`scl run ${fileUri.fsPath}`);
+    }
+  );
+
+  context.subscriptions.push(run);
 }
 
 export function deactivate(): Thenable<void> {

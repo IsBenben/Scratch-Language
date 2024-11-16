@@ -1,3 +1,4 @@
+#include "examples/preprocess_test.scl"
 // #include "examples/preprocess_test.scl"
 
 // 导入内置的库，不用加.scl，否则会报错

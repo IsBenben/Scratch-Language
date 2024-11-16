@@ -3,7 +3,7 @@ from utils import generate_id
 import copy
 from typing import TypeVar
 
-INDENT = ' |  '
+INDENT = '  '
 
 class Node:
     def node_type_name(self) -> str:
@@ -14,6 +14,8 @@ class Node:
 
     @staticmethod
     def dump_list(list, indent='') -> str:
+        if not list:
+            return indent + '[*No elements*]\n'
         result = indent + '[\n'
         for item in list:
             if isinstance(item, Node):
@@ -93,14 +95,16 @@ class Identifier(Factor):
         return indent + 'Identifier ' + self.name + '\n'
 
 class FunctionCall(Factor):
-    def __init__(self, name: str, args: list[Statement]):
+    def __init__(self, name: str, args: list[Statement], always_builtin: bool = True):
         self.name: str = name
         self.args: list[Statement] = args
+        self.always_builtin: bool = always_builtin
     
     def dump(self, indent=''):
         result = indent + 'FunctionCall {\n'
         result += indent + INDENT + '[str] ' + self.name + '\n'
         result += Node.dump_list(self.args, indent + INDENT)
+        result += indent + INDENT + '[bool] ' + str(self.always_builtin) + '\n'
         result += indent + '}\n'
         return result
 
@@ -121,16 +125,18 @@ class VariableDeclaration(Statement):
         return result
 
 class FunctionDeclaration(Statement):
-    def __init__(self, name: str, args: list[str], body: Block):
+    def __init__(self, name: str, args: list[str], body: Block, attributes: list[str]):
         self.name: str = name
         self.args: list[str] = args
         self.body: Block = body
+        self.attributes: list[str] = attributes
     
     def dump(self, indent=''):
         result = indent + 'FunctionDeclaration {\n'
         result += indent + INDENT + '[str] ' + self.name + '\n'
         result += self.dump_list(self.args, indent + INDENT)
         result += self.body.dump(indent + INDENT)
+        result += self.dump_list(self.attributes, indent + INDENT)
         result += indent + '}\n'
         return result
 

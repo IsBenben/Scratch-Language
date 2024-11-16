@@ -1,7 +1,7 @@
 __pycache__
 .idea
 tests
-output*
+output.*
 tempCodeRunnerFile.*
 project.json
 out
