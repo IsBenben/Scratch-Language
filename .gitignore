@@ -1,7 +1,7 @@
 __pycache__
 .idea
 tests
-output.*
+*.sb3
 tempCodeRunnerFile.*
 project.json
 out

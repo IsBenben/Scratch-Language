@@ -2,8 +2,7 @@
   "name": "scl",
   "displayName": "Scratch-Language-Extension",
   "description": "为 Scratch Language 制作的 VS Code 官方插件 (https://github.com/IsBenben/Scratch-Language)",
-  "license": "MIT",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "categories": [
     "Programming Languages"
   ],
@@ -15,7 +14,8 @@
   },
   "activationEvents": [
     "onCommand:scl.runCode",
-    "onLanguage:scl"
+    "onLanguage:scl",
+    "onStartupFinished"
   ],
   "main": "./client/out/extension",
   "contributes": {
@@ -45,33 +45,46 @@
         "scopeName": "source.scl",
         "path": "./syntaxes/scl.tmLanguage.json"
       }
-    ]
-  },
-  "menus": {
-    "editor/title/run": [
-      {
-        "when": "editorLangId == scl && config.scl.showRunIconInEditorTitleMenu",
-        "command": "scl.runCode",
-        "group": "navigation"
+    ],
+    "menus": {
+      "editor/title/run": [
+        {
+          "when": "editorLangId == scl && config.scl.showRunIconInEditorTitleMenu",
+          "command": "scl.runCode",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "Scratch Language Extension 设置",
+      "properties": {
+        "scl.showRunIconInEditorTitleMenu": {
+          "type": "boolean",
+          "default": true,
+          "description": "在编辑器标题栏中显示“运行代码”图标。",
+          "scope": "resource"
+        },
+        "scl.alwaysRunInNewTerminal": {
+          "type": "boolean",
+          "default": false,
+          "description": "始终在新的控制台运行代码。",
+          "scope": "resource"
+        },
+        "scl.compilerPath": {
+          "type": "string",
+          "default": "",
+          "description": "编译器文件cmdnew.py文件路径。",
+          "scope": "resource"
+        },
+        "scl.compilerOptions": {
+          "type": "string",
+          "default": "",
+          "description": "编译器命令行的附加选项。",
+          "scope": "resource"
+        }
       }
-    ]
-  },
-  "configuration": {
-    "type": "object",
-    "title": "Scratch Language Extension 设置",
-    "properties": {
-      "scl.showRunIconInEditorTitleMenu": {
-        "type": "boolean",
-        "default": true,
-        "description": "在编辑器标题栏中显示“运行代码”图标。",
-        "scope": "resource"
-      },
-      "scl.alwaysRunInNewTerminal": {
-        "type": "boolean",
-        "default": true,
-        "description": "始终在新的控制台运行代码。",
-        "scope": "resource"
-      }}
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

@@ -2,7 +2,8 @@ from __future__ import annotations
 from tokens import TokenType, tokenize, Token
 from nodes import *
 from error import Error, raise_error
-from typing import Optional, NoReturn, Any, Callable, TypeVar
+from typing import Optional, NoReturn, Any, Callable, TypeVar, Protocol, Generator
+from contextlib import contextmanager
 
 sign_to_english = {
     '+': 'add',
@@ -76,6 +77,11 @@ class Record:
             return self.parent.resolve(name)
         return None
 
+class SupportBody(Protocol):
+    body: list[Statement]
+T_BODY = TypeVar('T_BODY', bound=SupportBody)
+UNUSED = Any
+
 class Parser:
     def parse(self, tokens: str | list[Token]) -> Program:
         self.record: Record | None = None
@@ -90,37 +96,39 @@ class Parser:
         if tokens[0].type == type:
             return tokens.pop(0)
         raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected {type}'))
+    
+    @contextmanager
+    def new_record(self, block_type: type[T_BODY], check_no_new_record: bool = False) -> Generator[T_BODY, None, None]:
+        if check_no_new_record and self.no_new_record is not None:
+            assert block_type is Block
+            no_new_record = self.no_new_record
+            self.no_new_record = None
+            yield no_new_record  # type: ignore
+            return None
+        block_like = block_type()
+        old_record = self.record
+        self.record = Record(block_like.body, old_record)
+        yield block_like
+        self.record = old_record
 
     def parse_program(self, tokens: list[Token]) -> Program:
-        program = Program()
-        old_record = self.record
-        self.record = Record(program.body, old_record)
-        while tokens[0].type != TokenType.EOF:
-            statement = self.parse_statement(tokens)
-            if statement is not None:
-                extend_or_append(program.body, statement)
-        self.record = old_record
-        return program
+        with self.new_record(Program) as program:
+            while tokens[0].type != TokenType.EOF:
+                statement = self.parse_statement(tokens)
+                if statement is not None:
+                    extend_or_append(program.body, statement)
+            return program
     
     def parse_block(self, tokens: list[Token]) -> Block:
         assert self.record
 
-        no_new_record = self.no_new_record
         self.eat(tokens, TokenType.BLOCK_START)
-        if not no_new_record:
-            block = Block()
-            old_record = self.record
-            self.record = Record(block.body, old_record)
-        else:
-            block = no_new_record
-            self.no_new_record = None
-        while tokens[0].type != TokenType.BLOCK_END:
-            statement = self.parse_statement(tokens)
-            if statement is not None:
-                extend_or_append(block.body, statement)
-        self.eat(tokens, TokenType.BLOCK_END)
-        if not no_new_record:
-            self.record = old_record
+        with self.new_record(Block, check_no_new_record=True) as block:
+            while tokens[0].type != TokenType.BLOCK_END:
+                statement = self.parse_statement(tokens)
+                if statement is not None:
+                    extend_or_append(block.body, statement)
+            self.eat(tokens, TokenType.BLOCK_END)
         return block
 
     def parse_statement(self, tokens: list[Token]) -> STATEMENT_TYPE:
@@ -386,6 +394,8 @@ class Parser:
             factor = self.parse_function_call(tokens)
         elif tokens[0].type == TokenType.IDENTIFIER:
             factor = self.parse_identifier(tokens)
+        elif tokens[0].type == TokenType.KEYWORD and tokens[0].value == 'if':
+            factor = self.parse_if_expression(tokens)
         else:  # No any factor found
             raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected a factor'))
         
@@ -529,6 +539,31 @@ class Parser:
                 return FunctionCall('control_if_else', [condition, sub_stack, sub_stack2])
         return FunctionCall('control_if', [condition, sub_stack])
 
+    def parse_if_expression(self, tokens: list[Token]) -> Identifier:
+        assert self.record
+
+        result = Identifier('')
+        result.name = generate_id(('if_expression', result))
+        self.record.block.append(
+            self.record.variable_declaration(result.name, False, False)
+        )
+
+        self.eat(tokens)  # eat TokenType.KEYWORD
+        self.eat(tokens, TokenType.LEFT_PAREN)
+        condition = self.parse_and_expression(tokens)
+        self.eat(tokens, TokenType.RIGHT_PAREN)
+        with self.new_record(Block) as sub_stack:
+            value = self.parse_join_expression(tokens)
+            sub_stack.body.append(FunctionCall('data_setvariableto', [result, value]))
+        if self.eat(tokens, TokenType.KEYWORD).value != 'else':
+            raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "else" after if expression'))
+        with self.new_record(Block) as sub_stack2:
+            value = self.parse_join_expression(tokens)
+            sub_stack2.body.append(FunctionCall('data_setvariableto', [result, value]))
+
+        self.record.block.append(FunctionCall('control_if_else', [condition, sub_stack, sub_stack2]))
+        return result
+
     def parse_repeat_statement(self, tokens: list[Token]) -> FunctionCall:
         mode = self.eat(tokens).value  # eat TokenType.KEYWORD, "while" or "until"
         self.eat(tokens, TokenType.LEFT_PAREN)
@@ -540,6 +575,8 @@ class Parser:
         return FunctionCall('control_repeat_until', [condition, sub_stack])
 
     def parse_function_declaration(self, tokens: list[Token]) -> FunctionDeclaration:
+        assert self.record
+
         attributes = set()
         def parse_attributes() -> set[str]:
             result = set()
@@ -557,25 +594,22 @@ class Parser:
 
         self.eat(tokens)  # eat TokenType.KEYWORD
         attributes |= parse_attributes()
-        block = Block()
-        old_record = self.record
-        self.record = Record(block.body, old_record)
-        self.no_new_record = block
-        name = self.parse_identifier(tokens).name
-        attributes |= parse_attributes()
-        self.eat(tokens, TokenType.LEFT_PAREN)
-        params = []
-        if tokens[0].type != TokenType.RIGHT_PAREN:
-            params.append(self.parse_identifier(tokens).name)
-            self.record.variable_declaration(params[-1], False, False)
-            while tokens[0].type == TokenType.COMMA:
-                self.eat(tokens)  # eat TokenType.COMMA
+        with self.new_record(Block) as block:
+            self.no_new_record = block
+            name = self.parse_identifier(tokens).name
+            attributes |= parse_attributes()
+            self.eat(tokens, TokenType.LEFT_PAREN)
+            params = []
+            if tokens[0].type != TokenType.RIGHT_PAREN:
                 params.append(self.parse_identifier(tokens).name)
                 self.record.variable_declaration(params[-1], False, False)
-        self.eat(tokens, TokenType.RIGHT_PAREN)
-        attributes |= parse_attributes()
-        sub_stack = Block(self.parse_statement(tokens))
-        self.record = old_record
+                while tokens[0].type == TokenType.COMMA:
+                    self.eat(tokens)  # eat TokenType.COMMA
+                    params.append(self.parse_identifier(tokens).name)
+                    self.record.variable_declaration(params[-1], False, False)
+            self.eat(tokens, TokenType.RIGHT_PAREN)
+            attributes |= parse_attributes()
+            sub_stack = Block(self.parse_statement(tokens))
         return FunctionDeclaration(name, params, sub_stack, list(attributes))
 
     def parse_clone_statement(self, tokens: list[Token]) -> Clone:

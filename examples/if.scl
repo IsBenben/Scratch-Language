@@ -1,0 +1,5 @@
+// 三元表达式
+looks_say( \
+    if (1 > 1) "true" \
+    else "false" \
+)

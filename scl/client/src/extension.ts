@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as fs from 'fs';
 import {
   workspace as Workspace,
   window as Window,
@@ -58,6 +59,34 @@ function getOuterMostWorkspaceFolder(folder: WorkspaceFolder): WorkspaceFolder {
 }
 
 let terminal: Terminal | null = null;
+interface Settings {
+  showRunIconInEditorTitleMenu: boolean;
+  alwaysRunInNewTerminal: boolean;
+  compilerPath: string;
+  compilerOptions: string;
+}
+function getSetting<K extends keyof Settings>(key: K): Settings[K] {
+  console.log(
+    Workspace.getConfiguration('scl').get<Settings[K]>(
+      key,
+      {
+        showRunIconInEditorTitleMenu: true,
+        alwaysRunInNewTerminal: false,
+        compilerPath: '',
+        compilerOptions: '',
+      }[key]
+    )
+  );
+  return Workspace.getConfiguration('scl').get<Settings[K]>(
+    key,
+    {
+      showRunIconInEditorTitleMenu: true,
+      alwaysRunInNewTerminal: false,
+      compilerPath: '',
+      compilerOptions: '--quite',
+    }[key]
+  );
+}
 
 export function activate(context: ExtensionContext) {
   const module = context.asAbsolutePath(
@@ -144,24 +173,42 @@ export function activate(context: ExtensionContext) {
       }
     }
   });
-  Workspace.onDidChangeConfiguration((event) => {
-    
-  })
 
-  const run = commands.registerCommand(
-    'scl.runCode',
-    (fileUri: Uri) => {
-      let isNewTerminal = false;
-      if (terminal === null) {
-          terminal = Window.createTerminal("Code");
-          isNewTerminal = true;
-      }
-      terminal.show();
-      terminal.sendText(`scl run ${fileUri.fsPath}`);
+  const runCode = commands.registerCommand('scl.runCode', () => {
+    const compilerPath = getSetting('compilerPath');
+    //检查是否存在编译器
+    if (
+      !path.isAbsolute(compilerPath) ||
+      !fs.existsSync(compilerPath) ||
+      !fs.statSync(compilerPath).isFile()
+    ) {
+      Window.showErrorMessage(
+        'Scratch Language 编译器文件不存在，请检查配置。建议：书写绝对路径的 cmdnew.py。'
+      );
+      return;
     }
-  );
+    const editor = Window.activeTextEditor;
+    if (!editor || editor.document.languageId !== 'scl') {
+      Window.showErrorMessage('当前编辑器没有选择 Scratch Language 源代码文件。');
+      return;
+    }
+    if (getSetting('alwaysRunInNewTerminal') || terminal === null) {
+      terminal = Window.createTerminal('Scratch Language');
+    }
+    terminal.show();
+    const filePath = editor.document.uri.fsPath; //获取VSCODE编辑器的文件
+    const outFilePath = path.join(
+      path.dirname(filePath),
+      path.basename(filePath, '.scl') + '.sb3'
+    );
+    const command = `python ${compilerPath} --infile "${filePath}" --sb3 --outfile "${outFilePath}" ${getSetting(
+      'compilerOptions'
+    )}`;
+    terminal.sendText(command);
+    terminal.sendText(outFilePath);
+  });
 
-  context.subscriptions.push(run);
+  context.subscriptions.push(runCode);
 }
 
 export function deactivate(): Thenable<void> {
