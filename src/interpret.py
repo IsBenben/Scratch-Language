@@ -21,17 +21,21 @@ class Input:
     type: Literal['normal', 'boolean', 'block', 'shadow'] = 'normal'
     required: bool = True
 
+SCRATCH_EXTENSION = Literal['music', 'pen', 'videoSensing', 'text2speech', 'translate']
+
 @dataclass
 class BlockType:
     inputs: tuple[Input, ...] = ()
     fields: tuple[Input, ...] = ()
     shadow: bool = False
+    extensions: tuple[SCRATCH_EXTENSION, ...] = ()
 
-    def __init__(self, inputs: tuple[Input | str, ...]=(), fields: tuple[Input | str, ...]=(), shadow: bool=False):
+    def __init__(self, inputs: tuple[Input | str, ...]=(), fields: tuple[Input | str, ...]=(), shadow: bool=False, extensions: tuple[SCRATCH_EXTENSION, ...]=()):
         _process = lambda x: tuple(map(lambda y: (Input(y) if not isinstance(y, Input) else y), x))
         self.inputs = _process(inputs)
         self.fields = _process(fields)
         self.shadow = shadow
+        self.extensions = extensions
     
     @property
     def required_arguments_count(self):
@@ -64,6 +68,20 @@ BLOCK_TYPES: dict[str, BlockType] = {
     'looks_sayforsecs': BlockType(inputs=('MESSAGE', 'SECS')),
     'looks_think': BlockType(inputs=('MESSAGE',)),
     'looks_thinkforsecs': BlockType(inputs=('MESSAGE', 'SECS')),
+    'motion_changexby': BlockType(inputs=('DX',)),
+    'motion_changeyby': BlockType(inputs=('DY',)),
+    'motion_direction': BlockType(),
+    'motion_glidesecstoxy': BlockType(inputs=('SECS', 'X', 'Y')),
+    'motion_gotoxy': BlockType(inputs=('X', 'Y')),
+    'motion_ifonedgebounce': BlockType(),
+    'motion_movesteps': BlockType(inputs=('STEPS',)),
+    'motion_pointindirection': BlockType(inputs=('DIRECTION',)),
+    'motion_setx': BlockType(inputs=('X',)),
+    'motion_sety': BlockType(inputs=('Y',)),
+    'motion_turnleft': BlockType(inputs=('DEGREES',)),
+    'motion_turnright': BlockType(inputs=('DEGREES',)),
+    'motion_xposition': BlockType(),
+    'motion_yposition': BlockType(),
     'operator_add': BlockType(inputs=('NUM1', 'NUM2')),
     'operator_and': BlockType(inputs=(Input(name='OPERAND1', type='boolean'),
                                       Input(name='OPERAND2', type='boolean'))),
@@ -80,6 +98,13 @@ BLOCK_TYPES: dict[str, BlockType] = {
     'operator_or': BlockType(inputs=(Input(name='OPERAND1', type='boolean'),
                                      Input(name='OPERAND2', type='boolean'))),
     'operator_subtract': BlockType(inputs=('NUM1', 'NUM2')),
+    'pen_changePenSizeBy': BlockType(inputs=('SIZE',), extensions=('pen',)),
+    'pen_clear': BlockType(extensions=('pen',)),
+    'pen_penDown': BlockType(extensions=('pen',)),
+    'pen_penUp': BlockType(extensions=('pen',)),
+    'pen_setPenColorToColor': BlockType(inputs=('COLOR',), extensions=('pen',)),
+    'pen_setPenSizeTo': BlockType(inputs=('SIZE',), extensions=('pen',)),
+    'pen_stamp': BlockType(extensions=('pen',)),
     'sensing_answer': BlockType(),
     'sensing_askandwait': BlockType(inputs=('QUESTION',)),
     'sensing_loudness': BlockType(),
@@ -92,13 +117,14 @@ class Interpreter(NodeVisitor):
         self.blocks: dict[str, dict] = self.project['targets'][1]['blocks']
         self.variables: dict[str, list[str]] = self.project['targets'][0]['variables']
         self.lists: dict[str, list[str | list]] = self.project['targets'][0]['lists']
+        self.extensions: list[SCRATCH_EXTENSION] = self.project['extensions']
         self.parent_function: Optional[FunctionDeclaration] = None
         self.clone_variable = generate_id(('variable', 'clone', None))
         self.project['targets'][1]['variables'][self.clone_variable] = [self.clone_variable, '[NOT ASSIGNED]']
     
     def visit_Block(self, node) -> BlockList | None:
         if not node.body:
-            return None
+            return NoBlock(None)
         start_id = end_id = None
         event = None
 
@@ -132,7 +158,7 @@ class Interpreter(NodeVisitor):
         self.record = old_record
 
         if start_id is None:
-            return None
+            return NoBlock(None)
         return BlockList((start_id, end_id))
 
     def visit_Identifier(self, node) -> Variable | Block | String | Number | NoReturn:
@@ -306,6 +332,9 @@ class Interpreter(NodeVisitor):
                 inputs[arg_type.name] = arg_value
             else:
                 raise_error(Error('Interpret', f'Too many arguments in function {node.name}'))
+        for extension in bt.extensions:
+            if extension not in self.extensions:
+                self.extensions.append(extension)
         self.blocks[call_id] = {
             'opcode': node.name,
             'next': None,
@@ -353,7 +382,8 @@ class Interpreter(NodeVisitor):
         # go to inner
         self.parent_function = node
         inner_id = self.visit(node.body).get_start_end()[0]
-        self.blocks[inner_id]['parent'] = definition_id
+        if inner_id is not None:
+            self.blocks[inner_id]['parent'] = definition_id
 
         # blocks
         self.blocks[definition_id] = {

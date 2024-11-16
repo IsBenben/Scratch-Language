@@ -61,6 +61,7 @@ class Token:
     type: TokenType
     value: str
     lineno: Optional[int] = None
+    
 
     @property
     def desc(self):

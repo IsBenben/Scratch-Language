@@ -7,54 +7,44 @@ from error import ScratchLanguageError
 from interpret import Interpreter
 from parse import Parser
 from preprocessing import preprocess
+from utils import get_args, arg_parser
+import atexit
 import json
 import sys
-import argparse
 import zipfile
 import shutil
 import os
+import time
+
+args = get_args()
+
+if args.lint:
+    arg_parser.error('Linter is not implemented yet.')
+
+if not args.quite:
+    print('[Scratch-Language] version 1.1.1')
+    print()
+    start = time.time()
+    atexit.register(lambda: print(f'Successfully completed with {time.time() - start:.2f} seconds.'))
 
 folder = os.path.dirname(__file__)
 parser = Parser()
 interpreter = Interpreter()
 
-print('[Scratch-Language] version 1.1')
-print()
-
-arg_parser = argparse.ArgumentParser(description='Scratch-Language Command Line')
-arg_parser.add_argument('--recursionlimit', '-rl', help='Python递归的上限', default='2000')
-
-in_group = arg_parser.add_mutually_exclusive_group(required=True)
-in_group.add_argument('--infile', '-if', help='要解析的文件')
-in_group.add_argument('--incode', '-ic', help='要解析的代码')
-
-out_group = arg_parser.add_mutually_exclusive_group(required=True)
-out_group.add_argument('--outfile', '-of', help='输出结果到文件')
-out_group.add_argument('--outstd', '-os', help='输出结果到标准输出', action='store_true')
-
-mode_group = arg_parser.add_mutually_exclusive_group(required=True)
-mode_group.add_argument('--json', '-j', help='输出JSON格式的project文件', action='store_true')
-mode_group.add_argument('--ast', '-a', help='输出抽象语法树', action='store_true')
-mode_group.add_argument('--sb3', '-s', help='输出打包出的sb3文件', action='store_true')
-mode_group.add_argument('--tokens', '-t', help='输出词法分析结果', action='store_true')
-
-args = arg_parser.parse_args()
-
-if not args.recursionlimit.isdigit():
-    arg_parser.error('递归的上限不是整数')
-if int(args.recursionlimit) <= 10:
+if args.recursionlimit <= 10:
     arg_parser.error('递归的上限数字太小')
-else:
-    sys.setrecursionlimit(int(args.recursionlimit))
+sys.setrecursionlimit(args.recursionlimit)
 
 infile = None
 incode = args.incode
 if args.infile is not None:
     infile =  open(args.infile, 'r', encoding='utf-8')
+    atexit.register(infile.close)
     incode = infile.read()
 outfile = sys.stdout
 if args.outfile:
     outfile = open(args.outfile, 'w', encoding='utf-8')
+    atexit.register(outfile.close)
 
 # Process the input code
 try:
@@ -76,8 +66,3 @@ try:
 except ScratchLanguageError:
     print('生成时发生错误，请检查您的代码。')
     # raise  # For debugging
-
-if infile:
-    infile.close()
-if outfile != sys.stdout:
-    outfile.close()
