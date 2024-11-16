@@ -3,7 +3,7 @@
   "displayName": "Scratch-Language-Extension",
   "description": "为 Scratch Language 制作的 VS Code 官方插件 (https://github.com/IsBenben/Scratch-Language)",
   "license": "MIT",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "categories": [
     "Programming Languages"
   ],

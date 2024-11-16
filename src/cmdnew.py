@@ -22,7 +22,7 @@ if args.lint:
     arg_parser.error('Linter is not implemented yet.')
 
 if not args.quite:
-    print('[Scratch-Language] version 1.1.2')
+    print('[Scratch-Language] version 1.1.3')
     print()
     start = time.time()
     atexit.register(lambda: print(f'Successfully completed with {time.time() - start:.2f} seconds.'))

@@ -6,3 +6,4 @@ tempCodeRunnerFile.*
 project.json
 out
 node_modules
+.mypy_cache

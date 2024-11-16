@@ -18,8 +18,8 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
     def list_split(seq: list[Token]) -> list[list[Token]]:
         if not seq:
             return []
-        result = []
-        lineno = 0
+        result = []  # type: ignore
+        lineno: int | None = 0
         for ele in seq:
             if ele.lineno != lineno:
                 result.append([])
@@ -166,7 +166,7 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                 walk_i = i
                 walk_j = j
                 walk_tokens = [token]
-                walk_parens = []
+                walk_parens: list[Token] = []
                 walk_params: None | list[list[Token]] = None
                 while True:
                     walk_j += 1

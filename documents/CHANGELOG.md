@@ -15,3 +15,4 @@
 - *1.1.2 修复* [#1](https://github.com/IsBenben/Scratch-Language/issues/1) 可以修改内置函数。
 - *1.1.2 新增* `attribute` 关键字。
 - *1.1.2 新增* `#ifndef`、`#ifdef`、`#endif` 预处理命令。
+- *1.1.3 修复* mypy 报错。

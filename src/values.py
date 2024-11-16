@@ -19,19 +19,19 @@ class Value:
             raise TypeError('Type not defined')
         return [real_type, self.value]
 
-    def get_as_field(self) -> NoReturn:
+    def get_as_field(self) -> Any:
         raise_error(Error('Value', f'{type(self).__name__} cannot be used as a field'))
 
-    def get_as_boolean(self) -> NoReturn:
+    def get_as_boolean(self) -> Any:
         raise_error(Error('Value', f'{type(self).__name__} cannot be used as a boolean'))
 
-    def get_as_block(self) -> NoReturn:
+    def get_as_block(self) -> Any:
         raise_error(Error('Value', f'{type(self).__name__} cannot be used as a block'))
 
-    def get_as_normal(self) -> NoReturn:
+    def get_as_normal(self) -> Any:
         raise_error(Error('Value', f'{type(self).__name__} cannot be used as a value'))
     
-    def get_as_shadow(self) -> NoReturn:
+    def get_as_shadow(self) -> Any:
         raise_error(Error('Value', f'{type(self).__name__} cannot be used as a shadow'))
 
 class String(Value):
@@ -53,7 +53,7 @@ class BlockList(Value):
         return [2, self.value[0]]
 
 class NoBlock(BlockList):
-    value: None
+    value: None  # type: ignore
 
     def get_start_end(self) -> tuple[None, None]:
         return (None, None)
@@ -62,7 +62,7 @@ class NoBlock(BlockList):
         raise_error(Error('Value', f'{type(self).__name__} cannot be used as a block'))
 
 class Block(BlockList):
-    value: str
+    value: str  # type: ignore
 
     def get_start_end(self) -> tuple:
         return self.value, self.value
