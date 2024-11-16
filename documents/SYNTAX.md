@@ -125,6 +125,18 @@ if (true) {
 }
 ```
 
+Scratch Language 通过 `if` 语句实现分支。并通过一个小的技巧实现了 `if` - `else if` - `else`。
+
+### 表达式
+
+```
+// 三元表达式
+looks_say( \
+    if (1 > 1) "true" \
+    else "false" \
+)
+```
+
 ## 运算
 
 ### 运算符
