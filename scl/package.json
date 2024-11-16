@@ -1,43 +1,86 @@
 {
   "name": "scl",
   "displayName": "Scratch-Language-Extension",
-  "description": "VS Code Extension for Scratch Language (https://github.com/IsBenben/Scratch-Language)",
+  "description": "为 Scratch Language 制作的 VS Code 官方插件 (https://github.com/IsBenben/Scratch-Language)",
   "license": "MIT",
-  "version": "0.2.0",
+  "version": "1.1.2",
   "categories": [
     "Programming Languages"
   ],
   "keywords": [
-		"Scratch"
-	],
+    "Scratch"
+  ],
   "engines": {
     "vscode": "^1.52.0"
   },
   "activationEvents": [
-		"onLanguage:scl"
-	],
+    "onCommand:scl.runCode",
+    "onLanguage:scl"
+  ],
   "main": "./client/out/extension",
   "contributes": {
-    "languages": [{
-      "id": "scl",
-      "aliases": ["Scratch Language", "scl"],
-      "extensions": [".scl"],
-      "configuration": "./language-configuration.json"
-    }],
-    "grammars": [{
-      "language": "scl",
-      "scopeName": "source.scl",
-      "path": "./syntaxes/scl.tmLanguage.json"
-    }]
+    "commands": [
+      {
+        "command": "scl.runCode",
+        "title": "运行 Scratch Language 代码",
+        "icon": "$(play)"
+      }
+    ],
+    "languages": [
+      {
+        "id": "scl",
+        "aliases": [
+          "Scratch Language",
+          "scl"
+        ],
+        "extensions": [
+          ".scl"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "scl",
+        "scopeName": "source.scl",
+        "path": "./syntaxes/scl.tmLanguage.json"
+      }
+    ]
+  },
+  "menus": {
+    "editor/title/run": [
+      {
+        "when": "editorLangId == scl && config.scl.showRunIconInEditorTitleMenu",
+        "command": "scl.runCode",
+        "group": "navigation"
+      }
+    ]
+  },
+  "configuration": {
+    "type": "object",
+    "title": "Scratch Language Extension 设置",
+    "properties": {
+      "scl.showRunIconInEditorTitleMenu": {
+        "type": "boolean",
+        "default": true,
+        "description": "在编辑器标题栏中显示“运行代码”图标。",
+        "scope": "resource"
+      },
+      "scl.alwaysRunInNewTerminal": {
+        "type": "boolean",
+        "default": true,
+        "description": "始终在新的控制台运行代码。",
+        "scope": "resource"
+      }}
   },
   "scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -b",
-		"watch": "tsc -b -w",
-		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
-	},
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
+    "postinstall": "cd client && npm install && cd ../server && npm install && cd .."
+  },
   "devDependencies": {
-		"@types/node": "^20",
-		"typescript": "^5.6.2"
-	}
+    "@types/node": "^20",
+    "typescript": "^5.6.2"
+  }
 }

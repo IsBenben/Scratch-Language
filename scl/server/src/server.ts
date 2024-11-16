@@ -273,6 +273,11 @@ const keywords: Array<Keyword> = [
     documentation: '数组遍历。',
     example: 'for (i = anArray) { looks_say(i); /* 或其他事 */ }',
   },
+  {
+    label: 'attribute',
+    documentation: '修改函数属性。',
+    example: 'function attribute(norefresh) noRefreshFunction() { /* 做一些事 */ }',
+  },
 ];
 function createKeywordDocumentation(keyword: Keyword): MarkupContent {
   const example = keyword.example

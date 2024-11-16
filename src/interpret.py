@@ -238,7 +238,8 @@ class Interpreter(NodeVisitor):
         return Number(node.value)
 
     def visit_FunctionCall(self, node) -> Block:
-        if self.record.has_function(node.name):
+        if not node.always_builtin \
+               and self.record.has_function(node.name):
             return self._visit_custom_FunctionCall(node)
         return self._visit_builtin_FunctionCall(node)
 
@@ -353,6 +354,7 @@ class Interpreter(NodeVisitor):
         self.record.declare_function(node)
         function_id = generate_id((f'{PRO}name', self.record, node.name))
         arg_ids = [generate_id((f'{PRO}argument', function_id, arg_name)) for arg_name in node.args]
+        attributes = node.attributes
 
         # mutation
         mutation = {
@@ -362,7 +364,7 @@ class Interpreter(NodeVisitor):
             'argumentids': json_with_settings(json.dumps, arg_ids),
             'argumentnames':  json_with_settings(json.dumps, arg_ids),
             'argumentdefaults': json_with_settings(json.dumps, ['' * len(node.args)]),
-            'warp': 'false'
+            'warp': json_with_settings(json.dumps, 'norefresh' in attributes),
         }
 
         # inputs

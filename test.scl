@@ -1,8 +1,16 @@
 /* Powered by Scratch-Lang */
 
+// 反复横跳
+#define TIME_2 TIME_3
+#define 0.8 TIME_1
+#define TIME_1 TIME_2
+
+// 测试数组
+#include <examples/array.scl>
+
 ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
 
-const TIME = 0.8;  // 定义常量time，不可更改
+const TIME = TIME_3;  // 定义常量time 0.8，不可更改
 array a = [1, 2, 3, 4, 5];
 array b = a;  // copy a array
 b[1] = 10;
@@ -39,11 +47,11 @@ looks_sayforsecs("e: " .. e, TIME) // 说e≈2.718
 if (magical_number >= 100) {
     looks_sayforsecs("Greater than 100", TIME) // 说Greater than 100
     if (magical_number == 233) {
-        var magical_number = "1145141923319810"
+        var magical_number = "114514192331919810"
         if ("233" in magical_number) {
             looks_sayforsecs("Found 233!!!", TIME) // 说233!!!
         } else {
-            looks_sayforsecs("Ordinary Text: " + magical_number, TIME) // 说原始值
+            looks_sayforsecs("Ordinary Text: " .. magical_number, TIME) // 说原始值
         }
     }
     
