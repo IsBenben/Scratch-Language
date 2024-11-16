@@ -79,6 +79,7 @@ class Record:
 class Parser:
     def parse(self, tokens: str | list[Token]) -> Program:
         self.record: Record | None = None
+        self.no_new_record: Block | None = None
         if isinstance(tokens, str):
             tokens = tokenize(tokens)
         return self.parse_program(tokens)
@@ -91,7 +92,6 @@ class Parser:
         raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected {type}'))
 
     def parse_program(self, tokens: list[Token]) -> Program:
-        self.no_new_record = None
         program = Program()
         old_record = self.record
         self.record = Record(program.body, old_record)
@@ -125,6 +125,8 @@ class Parser:
 
     def parse_statement(self, tokens: list[Token]) -> STATEMENT_TYPE:
         assert self.record is not None
+
+        result: STATEMENT_TYPE
 
         # Special case
         if tokens[0].type == TokenType.STATEMENT_END:
@@ -321,7 +323,9 @@ class Parser:
             self.eat(tokens, TokenType.SUBSCRIPT_RIGHT)
             if isinstance(left, ListIdentifier):
                 item_of_list = [left, index]
-                left = FunctionCall('data_itemoflist', item_of_list)
+                # "list()" copy the list to fix mypy error
+                # https://mypy.readthedocs.io/en/stable/common_issues.html#invariance-vs-covariance
+                left = FunctionCall('data_itemoflist', list(item_of_list))
             else:
                 left = FunctionCall('operator_letter_of', [left, index])
         if tokens[0].type == TokenType.ASSIGNMENT:
@@ -330,7 +334,7 @@ class Parser:
             if self.eat(tokens).value != '=':
                 raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "=" after array set item'))
             expression = self.parse_join_expression(tokens)
-            left = FunctionCall('data_replaceitemoflist', item_of_list + [expression])
+            left = FunctionCall('data_replaceitemoflist', list(item_of_list + [expression]))
         return left
 
     def parse_factor(self, tokens: list[Token]) -> Expression:
@@ -342,7 +346,7 @@ class Parser:
             has_sign = True
             if self.eat(tokens).value == '-':
                 multiplier *= -1
-        factor = None
+        factor: Expression | None = None
 
         if tokens[0].type == TokenType.INTEGER:
             value = self.eat(tokens).value  # eat TokenType.INTEGER
@@ -399,7 +403,7 @@ class Parser:
                 self.eat(tokens)  # eat TokenType.COMMA   
                 params.append(self.parse_join_expression(tokens))
         self.eat(tokens, TokenType.RIGHT_PAREN)
-        return FunctionCall(name, params, always_builtin=False)
+        return FunctionCall(name, list(params), always_builtin=False)
 
     def parse_identifier(self, tokens: list[Token]) -> Identifier:
         assert self.record is not None
@@ -455,7 +459,8 @@ class Parser:
         assignment_node = self.eat(tokens)  # eat TokenType.ASSIGNMENT
         expression = self.parse_join_expression(tokens)
         self.eat(tokens, TokenType.STATEMENT_END)
-        
+
+        assignment: Block | FunctionCall
         if assignment_node.value == '=':
             if isinstance(expression, ListIdentifier):
                 index = Identifier(generate_id(('array', 'index', identifier)))
