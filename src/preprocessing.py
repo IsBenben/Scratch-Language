@@ -117,6 +117,11 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                 if line[2].value not in defines:
                     raise_error(Error('Preprocessing', f'"{line[2].desc}" is not defined (in directive {line[1].desc})'))
                 defines.pop(line[2].value)
+            elif line[1].value == 'error':
+                # #error message
+                if len(line) != 3 or line[2].type != TokenType.STRING:
+                    raise_error(Error('Preprocessing', f'The syntax of directive "{line[1].desc}" is invalid'))
+                raise_error(Error('Preprocessing', f'User error: {line[2].desc}'))
             else:
                 raise_error(Error('Preprocessing', f'Unknown directive "{line[1].desc}"'))
             line.clear()

@@ -1,0 +1,14 @@
+{
+	"name": "scl-server",
+	"description": "Server of Scratch Language",
+	"version": "0.2.0",
+	"license": "MIT",
+	"engines": {
+		"node": "*"
+	},
+	"dependencies": {
+		"vscode-languageserver": "^7.0.0",
+		"vscode-languageserver-textdocument": "^1.0.1"
+	},
+	"scripts": {}
+}

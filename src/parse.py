@@ -525,6 +525,7 @@ class Parser:
         assert self.record is not None
 
         self.eat(tokens)  # eat TokenType.KEYWORD
+        old_record = self.record
         name = self.parse_identifier(tokens).name
         self.eat(tokens, TokenType.LEFT_PAREN)
         params = []

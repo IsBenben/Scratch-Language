@@ -280,3 +280,56 @@ for (k = 1 -> 5) {  // 仅适用于遍历列表
     looks_sayforsecs(k, 0.5)
 }
 ```
+
+## 预处理
+
+预处理指令以 `#` 开头，在编译时会进行展开。
+
+### `#include "path/to/file"`
+
+```scl
+#include "examples/preprocess_test.scl"
+// → 直接将文件内容复制到此处
+```
+
+### `#include <header_name>`
+
+```scl
+#include <pen>
+// → 将 /includes/pen.scl 的文件内容复制到此处
+```
+
+### `#define value identifier(param1, param2, ...)`
+
+```scl
+#define -1 a
+#define 0 a()
+#define 1 a(b)
+
+// 这里只是简单替换，并不会对语法进行检查
+const res1 = a;  // == -1
+const res2 = a();  // == 0
+const res3 = a(b);  // == 1
+
+// 例如这里的代码正常工作
+#define { left
+#define } right
+
+left 
+    looks_say("Hello, world!");
+right
+```
+
+### `#undef identifier`
+
+```scl
+#define a 1
+#undef a  // 取消定义a
+const b = a;  // Error! 找不到a
+```
+
+### `#error "message"`
+
+```scl
+#error "This is an error!"  // Error! 展开时出错
+```

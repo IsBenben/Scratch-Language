@@ -1,5 +1,10 @@
 # Scratch-Language
 
+[![license](https://img.shields.io/github/license/IsBenben/Scratch-Language)](https://github.com/IsBenben/Scratch-Language/blob/main/LICENSE)
+[![commit](https://img.shields.io/github/last-commit/IsBenben/Scratch-Language)](https://github.com/IsBenben/Scratch-Language/commits/main)
+[![compiler-version](https://img.shields.io/badge/version-1.1.1-orange)](#)
+[![python-version](https://img.shields.io/badge/python-3.11%20|%203.12%20|%203.13-blue)](#)
+
 ## 介绍
 
 用Python为Scratch做的编程语言。包括词法分析、语法分析、编译器。
@@ -14,10 +19,14 @@
 
 见 /documents/SYNTAX.md。
 
-## 编译
+## 使用
 
 ```bash
 git clone https://github.com/IsBenben/Scratch-Language.git
 cd Scratch-Language
 python src/cmdnew.py -h
 ```
+
+## 更新日志
+
+见 /documents/CHANGELOG.md。

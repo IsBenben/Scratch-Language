@@ -52,6 +52,15 @@ class BlockList(Value):
     def get_as_block(self) -> list:
         return [2, self.value[0]]
 
+class NoBlock(BlockList):
+    value: None
+
+    def get_start_end(self) -> tuple[None, None]:
+        return (None, None)
+
+    def get_as_block(self) -> NoReturn:
+        raise_error(Error('Value', f'{type(self).__name__} cannot be used as a block'))
+
 class Block(BlockList):
     value: str
 

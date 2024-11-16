@@ -4,3 +4,5 @@ tests
 output*
 tempCodeRunnerFile.*
 project.json
+out
+node_modules

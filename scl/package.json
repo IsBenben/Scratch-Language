@@ -1,18 +1,26 @@
 {
   "name": "scl",
-  "displayName": "Scratch-Lang-Extension",
-  "description": "VS Code Extension for Scratch Language (https://github.com/IsBenben/Scratch.py)",
-  "version": "0.0.1",
-  "engines": {
-    "vscode": "^1.85.2"
-  },
+  "displayName": "Scratch-Language-Extension",
+  "description": "VS Code Extension for Scratch Language (https://github.com/IsBenben/Scratch-Language)",
+  "license": "MIT",
+  "version": "0.2.0",
   "categories": [
     "Programming Languages"
   ],
+  "keywords": [
+		"Scratch"
+	],
+  "engines": {
+    "vscode": "^1.52.0"
+  },
+  "activationEvents": [
+		"onLanguage:scl"
+	],
+  "main": "./client/out/extension",
   "contributes": {
     "languages": [{
       "id": "scl",
-      "aliases": ["Scratch Lang", "scl"],
+      "aliases": ["Scratch Language", "scl"],
       "extensions": [".scl"],
       "configuration": "./language-configuration.json"
     }],
@@ -21,5 +29,15 @@
       "scopeName": "source.scl",
       "path": "./syntaxes/scl.tmLanguage.json"
     }]
-  }
+  },
+  "scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -b",
+		"watch": "tsc -b -w",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
+	},
+  "devDependencies": {
+		"@types/node": "^20",
+		"typescript": "^5.6.2"
+	}
 }

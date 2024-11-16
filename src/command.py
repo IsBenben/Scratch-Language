@@ -1,3 +1,5 @@
+# Deprecated!
+
 from interpret import Interpreter
 from parse import Parser
 from tokens import tokenize
