@@ -46,6 +46,7 @@ BLOCK_TYPES: dict[str, BlockType] = {
     'control_create_clone_of': BlockType(inputs=(Input(name='CLONE_OPTION', type='shadow'),)),
     'control_create_clone_of_menu': BlockType(fields=('CLONE_OPTION',), shadow=True),
     'control_delete_this_clone': BlockType(),
+    'control_forever': BlockType(inputs=(Input(name='SUBSTACK', type='block'),)),
     'control_if': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
                                     Input(name='SUBSTACK', type='block'))),
     'control_if_else': BlockType(inputs=(Input(name='CONDITION', type='boolean'),

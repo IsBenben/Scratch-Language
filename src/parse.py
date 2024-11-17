@@ -4,6 +4,8 @@ from nodes import *
 from error import Error, raise_error
 from typing import Optional, NoReturn, Any, Callable, TypeVar, Protocol, Generator
 from contextlib import contextmanager
+from utils import *
+from optimize import Optimizer
 
 sign_to_english = {
     '+': 'add',
@@ -88,7 +90,13 @@ class Parser:
         self.no_new_record: Block | None = None
         if isinstance(tokens, str):
             tokens = tokenize(tokens)
-        return self.parse_program(tokens)
+        parsed = self.parse_program(tokens)
+        if not get_args().nooptimize:
+            result = Optimizer().visit(parsed)
+            if result is not None:
+                assert isinstance(result, Program)
+                parsed = result
+        return parsed
     
     def eat(self, tokens: list[Token], type: Optional[TokenType] = None) -> Token:
         if type is None:
@@ -200,9 +208,7 @@ class Parser:
                 boolean = self.eat(tokens).value == 'true'
                 if inverse:
                     boolean = not boolean
-                if boolean:
-                    return FunctionCall('operator_not', [])  # not() -> true
-                return FunctionCall('operator_not', [FunctionCall('operator_not', [])])  # not(true) -> false
+                return create_boolean(boolean)
             else:
                 raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected keyword "true" or "false"'))
         else:

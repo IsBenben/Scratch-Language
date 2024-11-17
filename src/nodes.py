@@ -87,6 +87,35 @@ class String(Factor):
     def dump(self, indent=''): 
         return indent + 'String ' + str(self.value) + '\n'
 
+# Boolean implement with FunctionCall
+
+def create_boolean(boolean: bool | Node) -> FunctionCall:
+    if boolean is True:
+        return FunctionCall('operator_not', [])  # not() -> true
+    if boolean is False:
+        return FunctionCall('operator_not', [FunctionCall('operator_not', [])])  # not(true) -> false
+    assert isinstance(boolean, Node)
+    if not is_boolean(boolean):
+        raise ValueError('Node is not a boolean')
+    return create_boolean(value_of_boolean(boolean))
+
+def is_boolean(node: Node) -> bool:
+    if not isinstance(node, FunctionCall) or not node.always_builtin:
+        return False
+    is_boolean_arg = len(node.args) == 0 \
+                         or len(node.args) == 1 \
+                         and is_boolean(node.args[0])
+    return node.name == 'operator_not' \
+               and is_boolean_arg
+
+def value_of_boolean(node: Node) -> bool:
+    if not is_boolean(node):
+        raise ValueError('Node is not a boolean')
+    assert isinstance(node, FunctionCall)
+    if len(node.args) == 0:  # not() -> true
+        return True
+    return not value_of_boolean(node.args[0])
+
 class Identifier(Factor):
     def __init__(self, name: str):
         self.name: str = name
@@ -190,10 +219,12 @@ class NodeVisitor:
         pass
 
     def visit_Block(self, node: Block):
-        pass
+        for statement in node.body:
+            self.visit(statement)
 
     def visit_Program(self, node: Program):
-        pass
+        for statement in node.body:
+            self.visit(statement)
 
     def visit_Expression(self, node: Expression):
         pass
@@ -211,13 +242,14 @@ class NodeVisitor:
         pass
     
     def visit_FunctionCall(self, node: FunctionCall):
-        pass
+        for arg in node.args:
+            self.visit(arg)
 
     def visit_VariableDeclaration(self, node: VariableDeclaration):
         pass
 
     def visit_FunctionDeclaration(self, node: FunctionDeclaration):
-        pass
+        self.visit(node.body)
 
     def visit_Custom(self, node: Custom):
         pass
@@ -227,6 +259,47 @@ class NodeVisitor:
 
     def visit_ListIdentifier(self, node: ListIdentifier):
         pass
+
+    def visit_error(self, node: Node):
+        raise TypeError(f'Method visit_{type(node).__name__} is not defined')
+
+class NodeTransformer(NodeVisitor):
+    # visit_xxx method usage:
+    # return Node: replace with
+    # return None: keep old
+
+    def visit_Block(self, node: Block):
+        for i, statement in enumerate(node.body):
+            result = self.visit(statement)
+            if result is not None:
+                node.body[i] = result
+        return node
+
+    def visit_Program(self, node: Program):
+        for i, statement in enumerate(node.body):
+            result = self.visit(statement)
+            if result is not None:
+                node.body[i] = result
+        return node
+    
+    def visit_FunctionCall(self, node: FunctionCall):
+        for i, arg in enumerate(node.args):
+            result = self.visit(arg)
+            if result is not None:
+                node.args[i] = result
+        return node
+
+    def visit_FunctionDeclaration(self, node: FunctionDeclaration):
+        result = self.visit(node.body)
+        if result is not None:
+            node.body = result
+        return node
+    
+    def visit_Clone(self, node: Clone):
+        result = self.visit(node.clone)
+        if result is not None:
+            node.clone = result
+        return node
 
     def visit_error(self, node: Node):
         raise TypeError(f'Method visit_{type(node).__name__} is not defined')

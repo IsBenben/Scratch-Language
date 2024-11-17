@@ -19,6 +19,7 @@ def generate_id(target: Any) -> str:
 arg_parser = argparse.ArgumentParser(description='Scratch-Language Command Line')
 arg_parser.add_argument('--recursionlimit', '-rl', help='Python递归的上限', default=2000, type=int)
 arg_parser.add_argument('--quite', '-q', help='静默模式，不会向控制台输出无用内容', action='store_true')
+arg_parser.add_argument('--nooptimize', '-no', help='取消优化，用于调试某些特殊情况', action='store_true')
 
 in_group = arg_parser.add_mutually_exclusive_group(required=True)
 in_group.add_argument('--infile', '-if', help='要解析的文件')
