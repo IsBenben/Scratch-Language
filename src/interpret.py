@@ -46,16 +46,16 @@ BLOCK_TYPES: dict[str, BlockType] = {
     'control_create_clone_of': BlockType(inputs=(Input(name='CLONE_OPTION', type='shadow'),)),
     'control_create_clone_of_menu': BlockType(fields=('CLONE_OPTION',), shadow=True),
     'control_delete_this_clone': BlockType(),
-    'control_forever': BlockType(inputs=(Input(name='SUBSTACK', type='block'),)),
+    'control_forever': BlockType(inputs=(Input(name='SUBSTACK', type='block', required=False),)),
     'control_if': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
-                                    Input(name='SUBSTACK', type='block'))),
+                                    Input(name='SUBSTACK', type='block', required=False))),
     'control_if_else': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
-                                         Input(name='SUBSTACK', type='block'),
-                                         Input(name='SUBSTACK2', type='block'))),
+                                         Input(name='SUBSTACK', type='block', required=False),
+                                         Input(name='SUBSTACK2', type='block', required=False))),
     'control_repeat': BlockType(inputs=(Input(name='TIMES'),
-                                        Input(name='SUBSTACK', type='block'))),
+                                        Input(name='SUBSTACK', type='block', required=False))),
     'control_repeat_until': BlockType(inputs=(Input(name='CONDITION', type='boolean'),
-                                              Input(name='SUBSTACK', type='block'))),
+                                              Input(name='SUBSTACK', type='block', required=False))),
     'control_wait': BlockType(inputs=('DURATION',)),
     'data_addtolist': BlockType(inputs=('ITEM',), fields=('LIST',)),
     'data_changevariableby': BlockType(inputs=('VALUE',), fields=('VARIABLE',)),
@@ -143,7 +143,7 @@ class Interpreter(NodeVisitor):
 
         for statement in node.body:
             block = self.visit(statement)
-            if isinstance(block, BlockList):
+            if isinstance(block, BlockList) and not isinstance(block, NoBlock):
                 # Simple understand: doubly linked lists
                 statement_start, statement_end = block.get_start_end()
                 if start_id is None:
@@ -153,7 +153,7 @@ class Interpreter(NodeVisitor):
                     event['next'] = statement_start
                 end_id = statement_end
                 event = self.blocks[end_id]
-            elif block is not None:
+            elif not isinstance(block, NoBlock) and block is not None:
                 raise_error(Error('Interpret', 'Invalid statement'))
         
         self.record = old_record
@@ -224,14 +224,14 @@ class Interpreter(NodeVisitor):
         }
         for statement in node.body:
             block = self.visit(statement)
-            if isinstance(block, BlockList):
+            if isinstance(block, BlockList) and not isinstance(block, NoBlock):
                 # Simple understand: doubly linked lists
                 statement_start, statement_end = block.get_start_end()
                 self.blocks[statement_start]['parent'] = event_id
                 event['next'] = statement_start
                 event_id = statement_end
                 event = self.blocks[event_id]
-            elif block is not None:
+            elif not isinstance(block, NoBlock) and block is not None:
                 raise_error(Error('Interpret', 'Invalid statement'))
         return Block(event_id)
 
@@ -294,11 +294,13 @@ class Interpreter(NodeVisitor):
             # if cannot find the function in built-in functions, raise an error
             raise_error(Error('Interpret', f'Function {node.name} not declared'))
         bt = BLOCK_TYPES[node.name]  # block type
-        if len(node.args) < bt.required_arguments_count:
+        # Parse arguments and remove NoBlock
+        args = [self.visit(arg) for arg in node.args]
+        args = [arg for arg in args if not isinstance(arg, NoBlock) and arg is not None]
+        if len(args) < bt.required_arguments_count:
             raise_error(Error('Interpret', f'Too few arguments in function {node.name}'))
         fields, inputs = {}, {}
-        for i in range(len(node.args)):
-            arg = self.visit(node.args[i])
+        for i, arg in enumerate(args):
             if i < len(bt.fields):
                 if isinstance(arg, Variable) and arg.value[1] is not None:
                     # Then, by default we think it set the variables

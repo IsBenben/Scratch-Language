@@ -212,7 +212,6 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                     
                     if not walk_parens:
                         if len(walk_tokens) >= 2:
-                            print(walk_tokens)
                             assert walk_params is not None
                             if walk_params == [[]]:
                                 assert len(walk_tokens) == 3  # identifier()
