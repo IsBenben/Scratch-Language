@@ -6,8 +6,6 @@ Scratch Language 是用Python为Scratch做的编程语言。包括词法分析�
 
 已经支持基本的语法。包括注释、函数、变量、判断、运算、列表、循环。
 
-编译器（及本扩展）源码地址：https://github.com/IsBenben/Scratch-Language
-
 视频：https://www.bilibili.com/video/BV1G31iY3ETX
 
 ## Features
@@ -29,10 +27,10 @@ Scratch Language 的语法见 https://github.com/IsBenben/Scratch-Language/blob/
 
 扩展有以下设置项：
 
-* `scl.showRunIconInEditorTitleMenu`：在编辑器标题栏中显示“运行代码”图标。
-* `scl.alwaysRunInNewTerminal`：始终在新的控制台运行代码。
-* `scl.compilerPath`：编译器文件cmdnew.py文件路径。
-* `scl.compilerOptions`：编译器命令行的附加选项。
+* `sc-lang-ext.showRunIconInEditorTitleMenu`：在编辑器标题栏中显示“运行代码”图标。
+* `sc-lang-ext.alwaysRunInNewTerminal`：始终在新的控制台运行代码。
+* `sc-lang-ext.compilerPath`：编译器文件cmdnew.py文件路径。
+* `sc-lang-ext.compilerOptions`：编译器命令行的附加选项。
 
 ## Known Issues
 
@@ -58,3 +56,7 @@ Scratch Language 的语法见 https://github.com/IsBenben/Scratch-Language/blob/
 - *1.1.3 修复* mypy 报错。
 - *1.1.4 新增* 三元表达式。
 - *1.1.4 新增* VS Code 插件运行功能。
+
+## version 1.2
+
+- *1.2 新增* 基本的优化（例如 `1 + 1` -> `2`）。
