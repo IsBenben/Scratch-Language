@@ -30,8 +30,6 @@ inverse_sign = {
     '>=': '<',
 }
 
-valid_attributes = {'norefresh'}
-
 # Must use string?
 ClassInfo = type | tuple['ClassInfo', ...]
 
@@ -596,7 +594,7 @@ class Parser:
                     result.add(self.parse_identifier(tokens).name)
                 self.eat(tokens, TokenType.RIGHT_PAREN)
             # else: pass  # No attributes, return empty set
-            return result & valid_attributes
+            return result
 
         self.eat(tokens)  # eat TokenType.KEYWORD
         attributes |= parse_attributes()

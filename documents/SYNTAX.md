@@ -183,7 +183,9 @@ test_function("Hello world", inf)
 
 函数使用 `attribute` 关键字修改属性。
 
-目前仅支持修改 “运行时不刷新屏幕”（`norefresh`）。
+目前支持修改：
+- 运行时不刷新屏幕（`norefresh`）。
+- 不进行优化（`nooptimize`）。
 
 ```scl
 // 顺序不能错，可在不同位置写，但是一个位置只能写一个

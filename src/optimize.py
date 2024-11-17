@@ -1,6 +1,8 @@
 from nodes import *
 import operator
 
+from nodes import FunctionDeclaration
+
 numeric_operators = {
     'operator_add': operator.add,
     'operator_subtract': operator.sub,
@@ -23,6 +25,11 @@ class Optimizer(NodeTransformer):
     def visit(self, node):
         # Example: !(!(!true)) -> false
         return super().visit(node)
+    
+    def visit_FunctionDeclaration(self, node):
+        if 'nooptimize' in node.attributes:
+            return None
+        return super().visit_FunctionDeclaration(node)
 
     def visit_FunctionCall(self, node):
         super().visit_FunctionCall(node)

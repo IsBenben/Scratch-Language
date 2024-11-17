@@ -1,7 +1,7 @@
 {
 	"name": "sc-lang-ext-server",
 	"description": "Server of Scratch Language",
-	"version": "1.2.0",
+	"version": "1.2.1",
 	"license": "MIT",
 	"engines": {
 		"node": "*"
