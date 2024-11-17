@@ -6,7 +6,7 @@
 #define TIME_1 TIME_2
 
 // 测试数组
-#include <examples/array.scl>
+#include "examples/array.scl"
 
 ; ; ; ; ; ; ; ; ; ; ; ; ; ; ;
 

@@ -198,6 +198,8 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                             assert walk_params is not None
                             walk_params.append([])
                             add_to_params = False
+                    elif not walk_parens:
+                        set_to_none = False
                     
                     if add_to_params:
                         if walk_parens:
@@ -210,6 +212,7 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                     
                     if not walk_parens:
                         if len(walk_tokens) >= 2:
+                            print(walk_tokens)
                             assert walk_params is not None
                             if walk_params == [[]]:
                                 assert len(walk_tokens) == 3  # identifier()

@@ -1,8 +1,9 @@
 {
   "name": "scl",
   "displayName": "Scratch-Language-Extension",
-  "description": "为 Scratch Language 制作的 VS Code 官方插件 (https://github.com/IsBenben/Scratch-Language)",
-  "version": "1.1.4",
+  "description": "为 Scratch Language 制作的 VS Code 官方扩展 (https://github.com/IsBenben/Scratch-Language)",
+  "version": "1.2.0",
+  "repository": "https://github.com/IsBenben/Scratch-Language",
   "categories": [
     "Programming Languages"
   ],

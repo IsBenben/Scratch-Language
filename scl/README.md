@@ -1,65 +1,60 @@
-# scl README
+# Scratch Language Extension README
 
-This is the README for your extension "scl". After writing up a brief description, we recommend including the following sections.
+Scratch Language 是用Python为Scratch做的编程语言。包括词法分析、语法分析、编译器。
+
+编译成品为Scratch可直接识别的project.json。支持打包sb3格式。
+
+已经支持基本的语法。包括注释、函数、变量、判断、运算、列表、循环。
+
+编译器（及本扩展）源码地址：https://github.com/IsBenben/Scratch-Language
+
+视频：https://www.bilibili.com/video/BV1G31iY3ETX
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Scratch Language 的语法见 https://github.com/IsBenben/Scratch-Language/blob/main/documents/CHANGELOG.md。
 
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+本扩展支持：
+- 语法高亮（关键字及字面量，不支持进一步的高亮）。
+- 代码提示（关键字及 API，不支持进一步的提示）。
+- 快捷运行（须手动下载编译器）。
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+扩展没有直接依赖。
+
+如果要使用快捷运行功能，需要下载编译器和 Python 3.11+，见 https://github.com/IsBenben/Scratch-Language/releases。
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+扩展有以下设置项：
 
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+* `scl.showRunIconInEditorTitleMenu`：在编辑器标题栏中显示“运行代码”图标。
+* `scl.alwaysRunInNewTerminal`：始终在新的控制台运行代码。
+* `scl.compilerPath`：编译器文件cmdnew.py文件路径。
+* `scl.compilerOptions`：编译器命令行的附加选项。
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+包括编译器的 Issue，可见 https://github.com/IsBenben/Scratch-Language/issues。
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### version 1.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+- *1.1 新增* 预处理命令解析系统。
+- *1.1 新增* `--recursionlimit` 控制台参数。
+- *1.1.1 新增* `--quite` 控制台参数。
+- *1.1.1 新增* `--lint` 控制台参数，暂无作用。
+- *1.1.1 新增* VS Code 插件语言服务器。
+- *1.1.1 更改* `--recursionlimit` 使用 `argparser` 自带的类型限制。
+- *1.1.1 修复* 关闭文件函数总是使用 `atexit` 注册，防止程序报错无法正常关闭文件。
+- *1.1.1 更改* hash 值生成算法的第一位从 `0` 改为 `$`。
+- *1.1.1 修复* [#1](https://github.com/IsBenben/Scratch-Language/issues/1) 不支持空函数体。
+- *1.1.2 修复* [#1](https://github.com/IsBenben/Scratch-Language/issues/1) 函数参数的作用域泄露。
+- *1.1.2 修复* [#1](https://github.com/IsBenben/Scratch-Language/issues/1) 可以修改内置函数。
+- *1.1.2 新增* `attribute` 关键字。
+- *1.1.2 新增* `#ifndef`、`#ifdef`、`#endif` 预处理命令。
+- *1.1.3 修复* mypy 报错。
+- *1.1.4 新增* 三元表达式。
+- *1.1.4 新增* VS Code 插件运行功能。
