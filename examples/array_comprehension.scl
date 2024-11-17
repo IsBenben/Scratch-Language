@@ -1,0 +1,8 @@
+array foo = [for (i = 1 -> 5) \
+             for (j = 1 -> 5) \
+             if (j >= i) \
+             (i .. "x" .. j .. "=" .. i * j)];
+for (item = foo) {
+    // 说话
+    looks_sayforsecs(item, 0.5);
+}

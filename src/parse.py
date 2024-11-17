@@ -1,8 +1,9 @@
 from __future__ import annotations
 from tokens import TokenType, tokenize, Token
 from nodes import *
+from poly import *
 from error import Error, raise_error
-from typing import Optional, NoReturn, Any, Callable, TypeVar, Protocol, Generator
+from typing import Optional, NoReturn, Any, Callable, TypeVar, Protocol, Generator, Literal
 from contextlib import contextmanager
 from utils import *
 from optimize import Optimizer
@@ -80,7 +81,10 @@ class Record:
 class SupportBody(Protocol):
     body: list[Statement]
 T_BODY = TypeVar('T_BODY', bound=SupportBody)
-UNUSED = Any
+COMPREHENSION_ELEMENTS_TYPE = list[
+    tuple[Literal['if'], Expression]
+    | tuple[Literal['for'], Identifier, Identifier, ListIdentifier]
+]
 
 class Parser:
     def parse(self, tokens: str | list[Token]) -> Program:
@@ -346,7 +350,7 @@ class Parser:
             if self.eat(tokens).value != '=':
                 raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "=" after array set item'))
             expression = self.parse_join_expression(tokens)
-            left = FunctionCall('data_replaceitemoflist', list(item_of_list + [expression]))
+            left = FunctionCall('data_replaceitemoflist', list([*item_of_list, expression]))
         return left
 
     def parse_factor(self, tokens: list[Token]) -> Expression:
@@ -439,11 +443,61 @@ class Parser:
         self.record.block.append(self.record.variable_declaration(name.name, False, True))
         self.record.block.append(FunctionCall('data_deletealloflist', [name]))
         if tokens[0].type != TokenType.SUBSCRIPT_RIGHT:
-            self.record.block.append(FunctionCall('data_addtolist', [name, self.parse_join_expression(tokens)]))
-            while tokens[0].type == TokenType.COMMA:
-                self.eat(tokens)  # eat TokenType.COMMA
+            if tokens[0].type == TokenType.KEYWORD:
+                name = self._parse_array_comprehension(tokens, name)
+            else:
                 self.record.block.append(FunctionCall('data_addtolist', [name, self.parse_join_expression(tokens)]))
+                while tokens[0].type == TokenType.COMMA:
+                    self.eat(tokens)  # eat TokenType.COMMA
+                    self.record.block.append(FunctionCall('data_addtolist', [name, self.parse_join_expression(tokens)]))
         self.eat(tokens, TokenType.SUBSCRIPT_RIGHT)
+        return name
+
+    def _parse_array_comprehension(self, tokens: list[Token], name: ListIdentifier) -> ListIdentifier:
+        assert self.record is not None
+
+        # Example: [for (i = arr) if (i % 2 == 0) (i)]
+        elements: COMPREHENSION_ELEMENTS_TYPE = []
+        while tokens[0].type == TokenType.KEYWORD:
+            token = self.eat(tokens)  # eat TokenType.KEYWORD
+            self.eat(tokens, TokenType.LEFT_PAREN)
+            if token.value == 'if':
+                condition = self.parse_comparison_expression(tokens)
+                elements.append(('if', condition))
+            elif token.value == 'for':
+                var = self.parse_identifier(tokens)
+                index = Identifier(generate_id(('for_each', var)))
+                assignment = self.eat(tokens, TokenType.ASSIGNMENT)
+                if assignment.value != '=':
+                    raise_error(Error('Parse', f'Unexpected token "{assignment.desc}", expected "="'))
+                sequence = self.parse_join_expression(tokens)
+                if not isinstance(sequence, ListIdentifier):
+                    raise_error(Error('Parse', f'Expected a list identifier'))
+                elements.append(('for', var, index, sequence))
+            else:
+                raise_error(Error('Parse', f'Unexpected token "{token.desc}", expected "if" or "for"'))
+            self.eat(tokens, TokenType.RIGHT_PAREN)
+
+        body = FunctionCall('data_addtolist', [
+            name,
+            self.parse_join_expression(tokens)
+        ])
+        declarations: list[VariableDeclaration] = []
+        for element in reversed(elements):
+            type, *rest = element
+            if type == 'for':
+                var, index, sequence = rest
+                assert isinstance(var, Identifier) and isinstance(index, Identifier) and isinstance(sequence, ListIdentifier)
+                body = poly_foreach(var=var, index=index, sequence=sequence, body=Block(body))
+                declarations.append(self.record.variable_declaration(var.name, False, False))
+                declarations.append(self.record.variable_declaration(index.name, False, False))
+            elif type == 'if':
+                condition, = rest
+                body = FunctionCall('control_if', [condition, Block(body)])
+            else:
+                assert False
+
+        self.record.block.append(poly_concat_blocks(Block(list(declarations)), Block(body)))
         return name
 
     def parse_assignment(self, tokens: list[Token]) -> FunctionCall | VariableDeclaration | list[Statement] | Block | NoReturn:
@@ -647,20 +701,7 @@ class Parser:
         self.eat(tokens, TokenType.RIGHT_PAREN)
         body = Block(self.parse_statement(tokens))
         return Block([
-            self.record.variable_declaration(var.name, False, False),
-            self.record.variable_declaration(index.name, False, False),
-            FunctionCall('data_setvariableto', [index, Number(0)]),
-            FunctionCall('control_repeat_until', [
-                FunctionCall('operator_equals', [
-                    index,
-                    FunctionCall('data_lengthoflist', [sequence])
-                ]),
-                Block([
-                    FunctionCall('data_changevariableby', [index, Number(1)]),
-                    FunctionCall('data_setvariableto', [
-                        var,
-                        FunctionCall('data_itemoflist', [sequence, index])
-                    ]),
-                ] + body.body)
-            ])
-        ])
+                   self.record.variable_declaration(var.name, False, False),
+                   self.record.variable_declaration(index.name, False, False),
+                   *poly_foreach(var=var, index=index, sequence=sequence, body=body),
+               ])

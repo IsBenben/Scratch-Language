@@ -23,7 +23,9 @@
 
 - *1.2 新增* 基本的优化（例如 `1 + 1` -> `2`）。
 - *1.2 新增* `--nooptimize` 命令行参数。
-- *1.2.1 修复* [#2](https://github.com/IsBenben/Scratch-Language/issues/2) KeyError: None。
-- *1.2.1 修复* VS Code 插件使用 `*` 启动事件。
-- *1.2.1 更改* 由于重名，VS Code 插件更名为 `sc-lang-ext`，功能基本不受影响。
-- *1.2.1 新增* `nooptimize` 函数属性。
+- *1.2.2 修复* [#2](https://github.com/IsBenben/Scratch-Language/issues/2) KeyError: None。
+- *1.2.2 修复* VS Code 插件使用 `*` 启动事件。
+- *1.2.2 更改* 由于重名，VS Code 插件更名为 `sc-lang-ext`，功能基本不受影响。
+- *1.2.2 新增* `nooptimize` 函数属性。
+- *1.2.2 修复* 错误的 `.vscodeignore`。
+- *1.2.2 新增* 数组推导式。
