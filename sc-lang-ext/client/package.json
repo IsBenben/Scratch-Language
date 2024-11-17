@@ -1,5 +1,5 @@
 {
-	"name": "scl-client",
+	"name": "sc-lang-ext-client",
 	"description": "Client of Scratch Language",
 	"version": "1.2.0",
 	"engines": {

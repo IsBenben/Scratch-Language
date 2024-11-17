@@ -1,9 +1,10 @@
 {
-  "name": "scl",
+  "name": "sc-lang-ext",
   "displayName": "Scratch-Language-Extension",
   "description": "为 Scratch Language 制作的 VS Code 官方扩展 (https://github.com/IsBenben/Scratch-Language)",
   "version": "1.2.0",
   "repository": "https://github.com/IsBenben/Scratch-Language",
+  "publisher": "scl",
   "categories": [
     "Programming Languages"
   ],
@@ -14,7 +15,7 @@
     "vscode": "^1.52.0"
   },
   "activationEvents": [
-    "onCommand:scl.runCode",
+    "onCommand:sc-lang-ext.runCode",
     "onLanguage:scl",
     "onStartupFinished"
   ],
@@ -22,7 +23,7 @@
   "contributes": {
     "commands": [
       {
-        "command": "scl.runCode",
+        "command": "sc-lang-ext.runCode",
         "title": "运行 Scratch Language 代码",
         "icon": "$(play)"
       }
@@ -32,6 +33,7 @@
         "id": "scl",
         "aliases": [
           "Scratch Language",
+          "Scratch Lang",
           "scl"
         ],
         "extensions": [
@@ -50,8 +52,8 @@
     "menus": {
       "editor/title/run": [
         {
-          "when": "editorLangId == scl && config.scl.showRunIconInEditorTitleMenu",
-          "command": "scl.runCode",
+          "when": "editorLangId == scl && config.sc-lang-ext.showRunIconInEditorTitleMenu",
+          "command": "sc-lang-ext.runCode",
           "group": "navigation"
         }
       ]
@@ -60,25 +62,25 @@
       "type": "object",
       "title": "Scratch Language Extension 设置",
       "properties": {
-        "scl.showRunIconInEditorTitleMenu": {
+        "sc-lang-ext.showRunIconInEditorTitleMenu": {
           "type": "boolean",
           "default": true,
           "description": "在编辑器标题栏中显示“运行代码”图标。",
           "scope": "resource"
         },
-        "scl.alwaysRunInNewTerminal": {
+        "sc-lang-ext.alwaysRunInNewTerminal": {
           "type": "boolean",
           "default": false,
           "description": "始终在新的控制台运行代码。",
           "scope": "resource"
         },
-        "scl.compilerPath": {
+        "sc-lang-ext.compilerPath": {
           "type": "string",
           "default": "",
           "description": "编译器文件cmdnew.py文件路径。",
           "scope": "resource"
         },
-        "scl.compilerOptions": {
+        "sc-lang-ext.compilerOptions": {
           "type": "string",
           "default": "",
           "description": "编译器命令行的附加选项。",

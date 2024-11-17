@@ -67,7 +67,7 @@ interface Settings {
 }
 function getSetting<K extends keyof Settings>(key: K): Settings[K] {
   console.log(
-    Workspace.getConfiguration('scl').get<Settings[K]>(
+    Workspace.getConfiguration('sc-lang-ext').get<Settings[K]>(
       key,
       {
         showRunIconInEditorTitleMenu: true,
@@ -77,7 +77,7 @@ function getSetting<K extends keyof Settings>(key: K): Settings[K] {
       }[key]
     )
   );
-  return Workspace.getConfiguration('scl').get<Settings[K]>(
+  return Workspace.getConfiguration('sc-lang-ext').get<Settings[K]>(
     key,
     {
       showRunIconInEditorTitleMenu: true,
@@ -174,7 +174,7 @@ export function activate(context: ExtensionContext) {
     }
   });
 
-  const runCode = commands.registerCommand('scl.runCode', () => {
+  const runCode = commands.registerCommand('sc-lang-ext.runCode', () => {
     const compilerPath = getSetting('compilerPath');
     if (
       !path.isAbsolute(compilerPath) ||
