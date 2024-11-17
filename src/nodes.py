@@ -43,7 +43,7 @@ class Statement(Node):
 STATEMENT_TYPE = None | list[Statement] | Statement
 
 class Block(Statement):
-    def __init__(self, body: STATEMENT_TYPE | Block = None):
+    def __init__(self, body: STATEMENT_TYPE = None):
         if isinstance(body, Block):
             body = body.body
         if body is None:
