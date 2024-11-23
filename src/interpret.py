@@ -105,6 +105,8 @@ BLOCK_TYPES: dict[str, BlockType] = {
     'operator_not': BlockType(inputs=(Input(name='OPERAND', type='boolean', required=False),)),
     'operator_or': BlockType(inputs=(Input(name='OPERAND1', type='boolean'),
                                      Input(name='OPERAND2', type='boolean'))),
+    'operator_round': BlockType(inputs=('NUM',)),
+    'operator_random': BlockType(inputs=('FROM', 'TO')),
     'operator_subtract': BlockType(inputs=('NUM1', 'NUM2')),
     'pen_changePenSizeBy': BlockType(inputs=('SIZE',), extensions=('pen',)),
     'pen_clear': BlockType(extensions=('pen',)),

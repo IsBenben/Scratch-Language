@@ -1,1 +1,1 @@
-#define ((r) * 65536 + (g) * 256 + (b)) rgb(r, g, b)
+#define (operator_round(r) * 65536 + operator_round(g) * 256 + operator_round(b)) rgb(r, g, b)
