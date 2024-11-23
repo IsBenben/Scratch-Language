@@ -67,3 +67,6 @@ Scratch Language 的语法见 https://github.com/IsBenben/Scratch-Language/blob/
 - *1.2.1 新增* `nooptimize` 函数属性。
 - *1.2.2 修复* 错误的 `.vscodeignore`。
 - *1.2.2 新增* 数组推导式。
+- *1.2.3 修复* `while/until` 循环的条件三元表达式不能动态求值。
+- *1.2.3 新增* 支持列表的三元表达式。
+- *1.2.3 新增* 支持布尔值的三元表达式。

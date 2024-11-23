@@ -2,6 +2,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from error import raise_error, Error
 from nodes import FunctionDeclaration
+# *-* encoding: utf-8 *-*
+"""
+Copyright (c) Copyright 2024 Scratch-Language Developers
+https://github.com/IsBenben/Scratch-Language
+License under the Apache License, version 2.0
+"""
+
 from typing import Optional, Literal
 
 # Record of Interpreter

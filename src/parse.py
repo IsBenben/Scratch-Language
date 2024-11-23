@@ -1,3 +1,10 @@
+# *-* encoding: utf-8 *-*
+"""
+Copyright (c) Copyright 2024 Scratch-Language Developers
+https://github.com/IsBenben/Scratch-Language
+License under the Apache License, version 2.0
+"""
+
 from __future__ import annotations
 from tokens import TokenType, tokenize, Token
 from nodes import *
@@ -7,6 +14,7 @@ from typing import Optional, NoReturn, Any, Callable, TypeVar, Protocol, Generat
 from contextlib import contextmanager
 from utils import *
 from optimize import Optimizer
+import copy
 
 sign_to_english = {
     '+': 'add',
@@ -113,7 +121,7 @@ class Parser:
             assert block_type is Block
             no_new_record = self.no_new_record
             self.no_new_record = None
-            yield no_new_record  # type: ignore
+            yield no_new_record  # type: ignore[misc]
             return None
         block_like = block_type()
         old_record = self.record
@@ -211,8 +219,23 @@ class Parser:
                 if inverse:
                     boolean = not boolean
                 return create_boolean(boolean)
+            elif tokens[0].value == 'if':
+                result = self.parse_if_expression_and(tokens)
+                # Identifier is a reporter block
+                # Convert to a boolean block instead
+                if inverse:
+                    comparison_expression = FunctionCall('operator_' + sign_to_english['=='], [
+                        result,
+                        String('false')
+                    ])
+                else:
+                    comparison_expression = FunctionCall('operator_' + sign_to_english['=='], [
+                        result,
+                        String('true')
+                    ])
+                inverse = False
             else:
-                raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected keyword "true" or "false"'))
+                raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected keyword "true", "if", or "false"'))
         else:
             left = self.parse_join_expression(tokens)
             if isinstance(left, ListIdentifier):
@@ -255,7 +278,7 @@ class Parser:
                     # index = 0
                     # for _ in range(len(left)):
                     #     index += 1
-                    #     result.append(left[i]) # 1-based index in Scratch
+                    #     result.append(left[i]) # Scratch lists are 1-indexed
                     # index = 0
                     # for _ in range(len(right)):
                     #     index += 1
@@ -403,7 +426,7 @@ class Parser:
         elif tokens[0].type == TokenType.IDENTIFIER:
             factor = self.parse_identifier(tokens)
         elif tokens[0].type == TokenType.KEYWORD and tokens[0].value == 'if':
-            factor = self.parse_if_expression(tokens)
+            factor = self.parse_if_expression_join(tokens)
         else:  # No any factor found
             raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected a factor'))
         
@@ -486,9 +509,9 @@ class Parser:
         for element in reversed(elements):
             type, *rest = element
             if type == 'for':
-                var, index, sequence = rest
+                var, index, sequence = rest  # type: ignore[assignment]
                 assert isinstance(var, Identifier) and isinstance(index, Identifier) and isinstance(sequence, ListIdentifier)
-                body = poly_foreach(var=var, index=index, sequence=sequence, body=Block(body))
+                body = poly_foreach(var=var, index=index, sequence=sequence, body=Block(body))  # type: ignore[assignment]
                 declarations.append(self.record.variable_declaration(var.name, False, False))
                 declarations.append(self.record.variable_declaration(index.name, False, False))
             elif type == 'if':
@@ -531,24 +554,14 @@ class Parser:
         assignment: Block | FunctionCall
         if assignment_node.value == '=':
             if isinstance(expression, ListIdentifier):
-                index = Identifier(generate_id(('array', 'index', identifier)))
-                # # Pseudo Code:
-                # index = 0
-                # identifier.clear()
-                # while index < len(expression):
-                #     identifier.append(expression[index])
-                assignment = Block([
-                    self.record.variable_declaration(index.name, False, False),
-                    FunctionCall('data_deletealloflist', [identifier]),
-                    FunctionCall('data_setvariableto', [index, Number(0)]),
-                    FunctionCall('control_repeat', [
-                        FunctionCall('data_lengthoflist', [expression]),
-                        Block([
-                            FunctionCall('data_changevariableby', [index, Number(1)]),
-                            FunctionCall('data_addtolist', [identifier, FunctionCall('data_itemoflist', [expression, index])])
-                        ])
-                    ]),
-                ])
+                with self.new_record(Block):
+                    index = Identifier(generate_id(('array', 'index', identifier)))
+                    assignment = Block(
+                        [
+                            self.record.variable_declaration(index.name, False, False),
+                            poly_copy_list(from_=expression, to=identifier, index=index)
+                        ]
+                    )
             else:
                 assignment = FunctionCall('data_setvariableto', [identifier, expression])
         elif assignment_node.value == '+=':
@@ -597,40 +610,71 @@ class Parser:
                 return FunctionCall('control_if_else', [condition, sub_stack, sub_stack2])
         return FunctionCall('control_if', [condition, sub_stack])
 
-    def parse_if_expression(self, tokens: list[Token]) -> Identifier:
+    def _parse_if_expression(self, tokens: list[Token], next_level: Callable[[list[Token]], Expression]) -> Identifier:
         assert self.record
-
-        result = Identifier('')
-        result.name = generate_id(('if_expression', result))
-        self.record.block.append(
-            self.record.variable_declaration(result.name, False, False)
-        )
 
         self.eat(tokens)  # eat TokenType.KEYWORD
         self.eat(tokens, TokenType.LEFT_PAREN)
         condition = self.parse_and_expression(tokens)
         self.eat(tokens, TokenType.RIGHT_PAREN)
         with self.new_record(Block) as sub_stack:
-            value = self.parse_join_expression(tokens)
-            sub_stack.body.append(FunctionCall('data_setvariableto', [result, value]))
+            value1 = next_level(tokens)
         if self.eat(tokens, TokenType.KEYWORD).value != 'else':
             raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "else" after if expression'))
         with self.new_record(Block) as sub_stack2:
-            value = self.parse_join_expression(tokens)
-            sub_stack2.body.append(FunctionCall('data_setvariableto', [result, value]))
+            value2 = next_level(tokens)
+        
+        is_array = isinstance(value1, ListIdentifier)
+        if is_array != isinstance(value2, ListIdentifier):
+            raise_error(Error('Parse', f'Expected same type of value in if expression'))
+        result: Identifier
+        if is_array:
+            result = ListIdentifier('')
+            result.name = generate_id(('if_expression', result))
+            index = Identifier('')
+            index.name = generate_id(('array', 'if_expression', result))
+            self.record.block.extend([
+                self.record.variable_declaration(result.name, False, True),
+                self.record.variable_declaration(index.name, False, False)
+            ])
+            sub_stack.body.append(Block(poly_copy_list(from_=value1, to=result, index=index)))
+            sub_stack2.body.append(Block(poly_copy_list(from_=value2, to=result, index=index)))
+        else:
+            result = Identifier('')
+            result.name = generate_id(('if_expression', result))
+            self.record.block.append(
+                self.record.variable_declaration(result.name, False, False)
+            )
+            sub_stack.body.append(FunctionCall('data_setvariableto', [result, value1]))
+            sub_stack2.body.append(FunctionCall('data_setvariableto', [result, value2]))
 
         self.record.block.append(FunctionCall('control_if_else', [condition, sub_stack, sub_stack2]))
         return result
 
-    def parse_repeat_statement(self, tokens: list[Token]) -> FunctionCall:
+    def parse_if_expression_join(self, tokens: list[Token]) -> Identifier:
+        return self._parse_if_expression(tokens, self.parse_join_expression)
+    
+    def parse_if_expression_and(self, tokens: list[Token]) -> Identifier:
+        return self._parse_if_expression(tokens, self.parse_and_expression)
+
+    def parse_repeat_statement(self, tokens: list[Token]) -> Block:
         mode = self.eat(tokens).value  # eat TokenType.KEYWORD, "while" or "until"
         self.eat(tokens, TokenType.LEFT_PAREN)
-        condition = self.parse_and_expression(tokens)
+        with self.new_record(Block) as condition_record:
+            condition = self.parse_and_expression(tokens)
         if mode == 'while':
             condition = FunctionCall('operator_' + sign_to_english['!'], [condition])
         self.eat(tokens, TokenType.RIGHT_PAREN)
         sub_stack = Block(self.parse_statement(tokens))
-        return FunctionCall('control_repeat_until', [condition, sub_stack])
+        return poly_concat_blocks(
+            copy.deepcopy(condition_record),
+            Block(
+                FunctionCall('control_repeat_until', [condition, poly_concat_blocks(
+                    sub_stack,
+                    poly_filter_non_declaration(condition_record)
+                )])
+            )
+        )
 
     def parse_function_declaration(self, tokens: list[Token]) -> FunctionDeclaration:
         assert self.record

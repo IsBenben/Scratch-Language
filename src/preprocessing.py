@@ -1,3 +1,10 @@
+# *-* encoding: utf-8 *-*
+"""
+Copyright (c) Copyright 2024 Scratch-Language Developers
+https://github.com/IsBenben/Scratch-Language
+License under the Apache License, version 2.0
+"""
+
 from dataclasses import dataclass
 from tokens import Token, TokenType, tokenize
 from error import Error, raise_error
@@ -15,10 +22,10 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
     if isinstance(tokens, str):
         tokens = tokenize(tokens)
 
-    def list_split(seq: list[Token]) -> list[list[Token]]:
+    def list_split(seq: list[Token]):
+        result: list[list[Token]] = []
         if not seq:
-            return []
-        result = []  # type: ignore
+            return result
         lineno: int | None = 0
         for ele in seq:
             if ele.lineno != lineno:
@@ -161,7 +168,7 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
             if token is None:
                 continue
             if token.type == TokenType.IDENTIFIER and token.value in defines:
-                line[j] = None  # type: ignore
+                line[j] = None  # type: ignore[assignment]
                 # Try to find the right paren
                 walk_i = i
                 walk_j = j
@@ -206,7 +213,7 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                             assert walk_params is not None
                             walk_params[-1].append(tk)
                     if set_to_none:
-                        lines[walk_i][walk_j] = None  # type: ignore
+                        lines[walk_i][walk_j] = None  # type: ignore[assignment]
                     else:
                         walk_tokens.pop()
                     
@@ -227,7 +234,7 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                 if params_count not in overloads:
                     raise_error(Error('Preprocessing', f'Cannot find {params_count} parameters overload of define "{token.desc}"'))
                 for token_inner in reversed(overloads[params_count].tokens):
-                    params = overloads[params_count].params
+                    params = overloads[params_count].params  # type: ignore[assignment]
                     if params:
                         assert walk_params
                         if token_inner.type == TokenType.IDENTIFIER and token_inner.value in params:
@@ -239,5 +246,4 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
         while None in line:
             line.remove(None)  # type: ignore
     # Flat the list
-    result = sum(lines, start=[])
-    return result
+    return sum(lines, start=[])

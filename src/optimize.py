@@ -1,7 +1,12 @@
+# *-* encoding: utf-8 *-*
+"""
+Copyright (c) Copyright 2024 Scratch-Language Developers
+https://github.com/IsBenben/Scratch-Language
+License under the Apache License, version 2.0
+"""
+
 from nodes import *
 import operator
-
-from nodes import FunctionDeclaration
 
 numeric_operators = {
     'operator_add': operator.add,

@@ -1,3 +1,10 @@
+# *-* encoding: utf-8 *-*
+"""
+Copyright (c) Copyright 2024 Scratch-Language Developers
+https://github.com/IsBenben/Scratch-Language
+License under the Apache License, version 2.0
+"""
+
 from dataclasses import dataclass
 from typing import Any, NoReturn
 from error import Error, raise_error
@@ -53,7 +60,7 @@ class BlockList(Value):
         return [2, self.value[0]]
 
 class NoBlock(BlockList):
-    value: None  # type: ignore
+    value: None  # type: ignore[assignment]
 
     def get_start_end(self) -> tuple[None, None]:
         return (None, None)
@@ -62,7 +69,7 @@ class NoBlock(BlockList):
         raise_error(Error('Value', f'{type(self).__name__} cannot be used as a block'))
 
 class Block(BlockList):
-    value: str  # type: ignore
+    value: str  # type: ignore[assignment]
 
     def get_start_end(self) -> tuple:
         return self.value, self.value
