@@ -1,3 +1,10 @@
+# *-* encoding: utf-8 *-*
+"""
+Copyright (c) Copyright 2024 Scratch-Language Developers
+https://github.com/IsBenben/Scratch-Language
+License under the Apache License, version 2.0
+"""
+
 from __future__ import annotations
 from utils import generate_id
 import copy
@@ -178,7 +185,8 @@ class Custom(Block):
 
 class Clone(Statement):
     def __init__(self, clone: Block):
-        self.clone = FunctionCall('control_if', [
+        self.clone = clone
+        self._clone_comparison = FunctionCall('control_if', [
             FunctionCall('operator_equals', [
                 Identifier(generate_id(('variable', 'clone', None))),
                 String(generate_id(('clone', self))),

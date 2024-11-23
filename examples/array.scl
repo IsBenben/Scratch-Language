@@ -8,3 +8,7 @@ delete arr_1[1];
 arr_1[1] = 10;
 // 查询
 const result = arr_1[1];
+// 遍历
+for (i = arr_1) {
+    looks_say(i);
+}

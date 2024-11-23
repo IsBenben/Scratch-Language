@@ -1,3 +1,10 @@
+# *-* encoding: utf-8 *-*
+"""
+Copyright (c) Copyright 2024 Scratch-Language Developers
+https://github.com/IsBenben/Scratch-Language
+License under the Apache License, version 2.0
+"""
+
 from dataclasses import dataclass
 from error import Error, raise_error
 from nodes import NodeVisitor, FunctionDeclaration
@@ -129,7 +136,7 @@ class Interpreter(NodeVisitor):
         start_id = end_id = None
         event = None
 
-        # Run in new record
+        # Set a new record
         old_record = self.record
         self.record = Record(self.record)
         # If the parent function is not None, add the arguments to the record
@@ -185,12 +192,12 @@ class Interpreter(NodeVisitor):
         if variable.type == 'variable':
             return Variable(node.name, variable_record)
         else:  # argument
-            # In scratch, it's a function call
+            # In Scratch, it's a function call
             call_id = generate_id(('call', node))
             self.blocks[call_id] = {
                 "opcode": "argument_reporter_string_number",
                 "next": None,
-                # Only return the value, and let external code to set parent
+                # Return the value only, and let external code to set the parent
                 "parent": None,
                 "inputs": {},
                 # more=arg_id, because it's only an argument, and not a variable
@@ -291,10 +298,10 @@ class Interpreter(NodeVisitor):
         # Built-in functions
         call_id = generate_id(('call', node))
         if node.name not in BLOCK_TYPES:
-            # if cannot find the function in built-in functions, raise an error
+            # If the function cannot be found in the built-in functions, raise an error
             raise_error(Error('Interpret', f'Function {node.name} not declared'))
         bt = BLOCK_TYPES[node.name]  # block type
-        # Parse arguments and remove NoBlock
+        # Parse the arguments and remove any NoBlock(s)
         args = [self.visit(arg) for arg in node.args]
         args = [arg for arg in args if not isinstance(arg, NoBlock) and arg is not None]
         if len(args) < bt.required_arguments_count:
@@ -303,7 +310,7 @@ class Interpreter(NodeVisitor):
         for i, arg in enumerate(args):
             if i < len(bt.fields):
                 if isinstance(arg, Variable) and arg.value[1] is not None:
-                    # Then, by default we think it set the variables
+                    # Then, by default assume that they are setting the variables
                     # TODO: modify the behavior
                     variable = arg.value[1].variables[arg.value[0]]
                     if variable.type == 'argument':
@@ -425,7 +432,7 @@ class Interpreter(NodeVisitor):
             'shadow': False,
             'topLevel': True,
         }
-        block = self.visit(node.clone)
+        block = self.visit(node._clone_comparison)
         # Simple understand: doubly linked lists
         statement_start = block.get_start_end()[0]
         self.blocks[statement_start]['parent'] = event_id

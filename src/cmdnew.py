@@ -1,7 +1,12 @@
+# *-* encoding: utf-8 *-*
 """
-Example usage:
-& python cmdnew.py --infile test.scl --sb3 --outfile output.sb3
+Copyright (c) Copyright 2024 Scratch-Language Developers
+https://github.com/IsBenben/Scratch-Language
+License under the Apache License, version 2.0
 """
+
+# Example usage:
+# python cmdnew.py --infile test.scl --sb3 --outfile output.sb3
 
 from error import ScratchLanguageError
 from interpret import Interpreter
@@ -22,7 +27,7 @@ if args.lint:
     arg_parser.error('Linter is not implemented yet.')
 
 if not args.quite:
-    print('[Scratch-Language] version 1.2.2')
+    print('[Scratch-Language] version 1.2.3')
     print()
     start = time.time()
     atexit.register(lambda: print(f'Successfully completed with {time.time() - start:.2f} seconds.'))
