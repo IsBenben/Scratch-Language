@@ -33,7 +33,7 @@ def poly_foreach(*, var: Identifier, index: Identifier, sequence: ListIdentifier
     ]
 
 @overload
-def poly_copy_list(*, from_: ListIdentifier, to: ListIdentifier, index: Identifier) -> list[Statement]: ...  # type: ignore[overload-overlap]
+def poly_copy_list(*, from_: ListIdentifier, to: ListIdentifier, index: Identifier) -> Block: ...  # type: ignore[overload-overlap]
 @overload
 def poly_copy_list(*, from_: Expression, to: ListIdentifier, index: Identifier) -> NoReturn: ...
 @overload
@@ -45,7 +45,7 @@ def poly_copy_list(*, from_, to, index):  # type: ignore
     is_array = isinstance(from_, ListIdentifier)
     if is_array != isinstance(to, ListIdentifier):
         raise_error(Error('Poly', 'Cannot copy to the variable because the types are different'))
-    if is_array:
+    if not is_array:
         return FunctionCall('data_setvariableto', [from_, to])
     else:
         # # Pseudo Code:
@@ -53,7 +53,7 @@ def poly_copy_list(*, from_, to, index):  # type: ignore
         # identifier.clear()
         # while index < len(expression):
         #     identifier.append(expression[index])
-        return [
+        return Block([
             FunctionCall('data_deletealloflist', [to]),
             FunctionCall('data_setvariableto', [index, Number(0)]),
             FunctionCall('control_repeat', [
@@ -63,7 +63,7 @@ def poly_copy_list(*, from_, to, index):  # type: ignore
                     FunctionCall('data_addtolist', [to, FunctionCall('data_itemoflist', [from_, index])])
                 ])
             ]),
-        ]
+        ])
 
 def poly_filter_non_declaration(body: Block) -> Block:
     return Block([

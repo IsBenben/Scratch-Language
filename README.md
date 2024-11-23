@@ -31,3 +31,8 @@ python src/cmdnew.py -h
 ## 更新日志
 
 见 /documents/CHANGELOG.md。
+
+
+## 个人吐槽
+
+开 `standard` 的 Pylance 都会抛出数十个错误，Shitcode 多到完全没法看。
