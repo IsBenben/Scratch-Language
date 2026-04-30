@@ -53,7 +53,7 @@ TOKEN_REGEX: dict[TokenType, re.Pattern | str] = {
     TokenType.STRING: r'".*?"',
     TokenType.COMPARE: r'==|!=|<=|>=|<|>',
     TokenType.ASSIGNMENT: r'=|\+=|-=|\*=|/=|%=',
-    TokenType.OPERATOR: r'->|[+\-*/%]|\.{2}|!|\|\||&&',
+    TokenType.OPERATOR: r'->|\*{2}|[+\-*/%]|\.{2}|!|\|\||&&',
 }
 # Change the string to regex pattern
 TOKEN_REGEX = {

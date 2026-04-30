@@ -108,6 +108,7 @@ BLOCK_TYPES: dict[str, BlockType] = {
     'operator_round': BlockType(inputs=('NUM',)),
     'operator_random': BlockType(inputs=('FROM', 'TO')),
     'operator_subtract': BlockType(inputs=('NUM1', 'NUM2')),
+    'operator_mathop': BlockType(inputs=('NUM',), fields=('OPERATOR',)),
     'pen_changePenSizeBy': BlockType(inputs=('SIZE',), extensions=('pen',)),
     'pen_clear': BlockType(extensions=('pen',)),
     'pen_penDown': BlockType(extensions=('pen',)),

@@ -1,0 +1,7 @@
+#include <math>
+
+const msg = \
+    if (approxeq(sin(45), sqrt(2)/2)) "sin(45°)=√2/2" \
+    else "sin(45°)≠√2/2"
+
+looks_sayforsecs(msg, 2)

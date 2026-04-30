@@ -1,0 +1,7 @@
+#include<math>
+
+const msg = \
+    if (approxeq(2**31-1, 2147483647, 0.01)) "yes" \
+    else "no"
+
+looks_say(msg)

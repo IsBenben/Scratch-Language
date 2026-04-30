@@ -1,1 +1,6 @@
+#ifndef INCLUDE_PEN
+#define INCLUDE_PEN
+
 #define (operator_round(r) * 65536 + operator_round(g) * 256 + operator_round(b)) rgb(r, g, b)
+
+#endif
