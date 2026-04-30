@@ -47,6 +47,9 @@ class String(Value):
 
     def get_as_normal(self) -> list:
         return [1, self._type_value]
+    
+    def get_as_field(self) -> list[str | None]:
+        return [self.value, None]
 
 EMPTY_STRING = String('')
 

@@ -11,7 +11,7 @@ from error import Error, raise_error
 import os
 
 folder = os.path.dirname(__file__)
-HEADER_PATH = os.path.join(folder, '../includes')
+HEADER_PATH = os.path.join(folder, '..', 'includes')
 
 @dataclass
 class Define:
@@ -64,7 +64,7 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                 path = ''
                 if len(line) == 3 \
                        and line[2].type == TokenType.STRING:
-                    #include "path/to/file"
+                    # #include "path/to/file"
                     path = os.path.join(relative_path, line[2].value)
                 elif len(line) == 5 \
                          and line[2].type == TokenType.COMPARE \
@@ -83,6 +83,7 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                     for line_inner in reversed(list_split(tokenize(f.read())[:-1])):
                         lines.insert(i + 1, line_inner)
             elif line[1].value == 'define':
+                # The values is not required
                 def test_3():
                     # Test of "#define value identifier(param1, param2, ...)"
                     # Return the index of left paren, return -1 if the syntax invalid
@@ -90,7 +91,7 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                     if i is None:
                         return -1
                     # ? What is the compare
-                    result = len(line) >= 7 \
+                    result = len(line) >= 6 \
                                  and line[-1].type == TokenType.RIGHT_PAREN \
                                  and 4 <= i <= len(line) - 2 \
                                  and all(map(lambda x: x.type == TokenType.COMMA, line[i+2:-1:2])) \
@@ -101,10 +102,10 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
 
                 name = None
                 params = None
-                if len(line) >= 4 and line[-1].type == TokenType.IDENTIFIER:
+                if len(line) >= 3 and line[-1].type == TokenType.IDENTIFIER:
                     # #define value identifier
                     name = -1
-                elif len(line) >= 6 \
+                elif len(line) >= 5 \
                          and line[-1].type == TokenType.RIGHT_PAREN \
                          and line[-2].type == TokenType.LEFT_PAREN \
                          and line[-3].type == TokenType.IDENTIFIER:

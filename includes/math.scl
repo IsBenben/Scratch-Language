@@ -1,0 +1,22 @@
+#ifndef INCLUDE_MATH
+#define INCLUDE_MATH
+
+#define operator_mathop("abs", x) abs(x)
+#define operator_mathop("floor", x) floor(x)
+#define operator_mathop("ceil", x) ceil(x)
+#define operator_mathop("sqrt", x) sqrt(x)
+#define operator_mathop("sin", x) sin(x)
+#define operator_mathop("cos", x) cos(x)
+#define operator_mathop("tan", x) tan(x)
+#define operator_mathop("asin", x) asin(x)
+#define operator_mathop("acos", x) acos(x)
+#define operator_mathop("atan", x) atan(x)
+#define operator_mathop("ln", x) ln(x)
+#define operator_mathop("log", x) log(x)
+
+#define abs((a)-(b))<(precision) approxeq(a, b, precision)
+#define approxeq(a, b, 0.000001) approxeq(a, b)
+
+#define 2147483647 INT_MAX
+
+#endif

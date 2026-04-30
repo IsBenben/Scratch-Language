@@ -306,6 +306,14 @@ class Parser:
                     left = result
                 else:
                     raise_error(Error('Parse', f'Cannot use operator "{operator}" with two arrays'))
+            elif operator == '**':  # if not is_array:
+                # e^(ln(left)*right)
+                left = FunctionCall('operator_mathop', [String('e ^'),
+                           FunctionCall('operator_' + sign_to_english['*'], [
+                               FunctionCall('operator_mathop', [String('ln'), left]),
+                               right
+                           ])
+                       ])
             else:
                 left = FunctionCall('operator_' + sign_to_english[operator], [left, right])
         return left
@@ -351,7 +359,10 @@ class Parser:
         return self._parse_expression(tokens, ['+', '-'], self.parse_multiplicative_expression)
 
     def parse_multiplicative_expression(self, tokens: list[Token]) -> Expression:
-        return self._parse_expression(tokens, ['*', '/', '%'], self.parse_subscript_expression)
+        return self._parse_expression(tokens, ['*', '/', '%'], self.parse_power_expression)
+
+    def parse_power_expression(self, tokens: list[Token]) -> Expression:
+        return self._parse_expression(tokens, ['**'], self.parse_subscript_expression)
     
     def parse_subscript_expression(self, tokens: list[Token]) -> Expression | NoReturn:
         left = self.parse_factor(tokens)
