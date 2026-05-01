@@ -1,0 +1,33 @@
+// Scratch-Language 冒泡排序
+#define {var t=a; a=b; b=t; } swap(a,b)
+
+sensing_askandwait("请输入数组，用空格分隔");
+
+var input_string = sensing_answer();
+array input_array = [""];
+var index = 1;
+var len = 1;
+while (index <= operator_length(input_string)) {
+    if (operator_letter_of(input_string, index) == " ") {
+        data_addtolist(input_array, "");
+        len += 1;
+    } else {
+        input_array[len] = input_array[len] .. operator_letter_of(input_string, index);
+    }
+    index += 1;
+}
+
+for (i = 1 -> len) {
+    for (j = 1 -> len - i) {
+        if (input_array[j] > input_array[j + 1]) {
+            swap(input_array[j], input_array[j + 1]);
+        }
+    }
+}
+
+var output = "";
+for (number = input_array) {
+    output = output .. number .. " ";
+}
+
+looks_say("排序后的数组 " .. output);

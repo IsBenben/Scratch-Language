@@ -5,3 +5,4 @@ tests
 tempCodeRunnerFile.*
 project.json
 .mypy_cache
+*.prof

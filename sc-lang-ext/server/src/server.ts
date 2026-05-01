@@ -567,6 +567,18 @@ const builtinFunctions: Array<BuiltinFunction> = [
     extensions: [],
   },
   {
+    label: 'operator_mathop',
+    chinese: '[OPERATOR] (NUM)',
+    args: ['OPERATOR', 'NUM'],
+    extensions: [],
+  },
+  {
+    label: 'operator_length',
+    chinese: '(STRING) 的字符数',
+    args: ['STRING'],
+    extensions: [],
+  },
+  {
     label: 'pen_changePenSizeBy',
     chinese: '将笔的粗细增加 (SIZE)',
     args: ['SIZE'],

@@ -38,14 +38,6 @@ TOKEN_REGEX: dict[TokenType, re.Pattern | str] = {
     TokenType.COMMENT: re.compile(r'//[^\n\r]*|/\*.*?\*/', re.DOTALL),
     TokenType.WHITE: r'[ \t\r]+|\\\n',
     TokenType.STATEMENT_END: r';|\n',
-    TokenType.LEFT_PAREN: r'\(',
-    TokenType.RIGHT_PAREN: r'\)',
-    TokenType.BLOCK_START: r'\{',
-    TokenType.SUBSCRIPT_LEFT: r'\[',
-    TokenType.SUBSCRIPT_RIGHT: r'\]',
-    TokenType.BLOCK_END: r'\}',
-    TokenType.COMMA: r',',
-    TokenType.PREPROCESSING: '#',
     # \u4e00 - \u9fa5 is the unicode range of Chinese characters
     TokenType.IDENTIFIER: r'[a-zA-Z_\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]*',
     TokenType.FLOAT: r'[1-9]\d*\.\d*|0?\.\d+',
@@ -61,6 +53,16 @@ TOKEN_REGEX = {
                     if isinstance(pattern, str)
                     else pattern
     for token_type, pattern in TOKEN_REGEX.items()
+}
+ONE_CHAR_TOKENS = {
+    '(': TokenType.LEFT_PAREN,
+    ')': TokenType.RIGHT_PAREN,
+    '{': TokenType.BLOCK_START,
+    '[': TokenType.SUBSCRIPT_LEFT,
+    ']': TokenType.SUBSCRIPT_RIGHT,
+    '}': TokenType.BLOCK_END,
+    ',': TokenType.COMMA,
+    '#': TokenType.PREPROCESSING,
 }
 
 @dataclass
@@ -82,6 +84,10 @@ def tokenize(code: str) -> list[Token]:
     match: Optional[re.Match] = None
     lineno = 1
     while code:
+        if code[0] in ONE_CHAR_TOKENS:
+            tokens.append(Token(ONE_CHAR_TOKENS[code[0]], code[0], old_lineno))
+            code = code[1:]
+            continue
         for token_type, pattern in TOKEN_REGEX.items():
             match = re.match(pattern, code)
             if not match:

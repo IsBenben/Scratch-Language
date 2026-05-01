@@ -9,18 +9,22 @@ from typing import Any
 import argparse
 
 valid_chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$'
-target_ids: dict[int, Any] = {}
+target_ids: dict[Any, str] = {}
+current_id = 0
+
+def to_string(number: int) -> str:
+    res = ''
+    while number > 0:
+        res = valid_chars[number % len(valid_chars)] + res
+        number //= len(valid_chars)
+    return res or '0'
 
 def generate_id(target: Any) -> str:
-    id_num = hash(target) + 9223372036854775809
-    while id_num in target_ids and target_ids[id_num] != target:
-        id_num += 1
-    res = ''
-    while id_num > 0:
-        res = valid_chars[id_num % len(valid_chars)] + res
-        id_num //= len(valid_chars)
-    target_ids[id_num] = target
-    return '$' + res.zfill(11)
+    global current_id
+    if target not in target_ids:
+        target_ids[target] = to_string(current_id)
+        current_id += 1
+    return '__scl_' + target_ids[target]
     # return str(target)  # For debugging
 
 arg_parser = argparse.ArgumentParser(description='Scratch-Language Command Line')

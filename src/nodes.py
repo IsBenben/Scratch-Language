@@ -212,6 +212,9 @@ class Clone(Statement):
 class ListIdentifier(Identifier):
     def __init__(self, name: str | Identifier):
         self.name: str = name if isinstance(name, str) else name.name
+    
+    def dump(self, indent=''):
+        return indent + 'ListIdentifier ' + self.name + '\n'
 
 class Macro(Statement):
     def __init__(self, name: str, args: list[str], body: STATEMENT_TYPE):
