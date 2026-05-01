@@ -462,13 +462,13 @@ class Parser:
         self.eat(tokens, TokenType.RIGHT_PAREN)
         return FunctionCall(name, list(params), always_builtin=False)
 
-    def parse_identifier(self, tokens: list[Token]) -> Identifier:
+    def parse_identifier(self, tokens: list[Token], force_array=False) -> Identifier:
         assert self.record is not None
 
         if tokens[0].type == TokenType.IDENTIFIER:
             name = self.eat(tokens).value
             variable = self.record.resolve(name)
-            if isinstance(variable, VariableDeclaration) and variable.is_array:
+            if (isinstance(variable, VariableDeclaration) and variable.is_array) or force_array:
                 return ListIdentifier(name)
             return Identifier(name)
         raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected an identifier (letters, "_", or numbers (not start))'))
@@ -543,6 +543,7 @@ class Parser:
         assert self.record is not None
         
         is_declare = False
+        is_array = False
         if tokens[0].type == TokenType.KEYWORD:
             if tokens[0].value in ['const', 'var', 'array']:
                 is_declare = True
@@ -551,7 +552,7 @@ class Parser:
                 self.eat(tokens)  # eat TokenType.KEYWORD
             else:
                 raise_error(Error('Parse', f'Unexpected token "{tokens[0].desc}", expected "var", "const", "array" or an identifier'))
-        identifier = self.parse_identifier(tokens)
+        identifier = self.parse_identifier(tokens, is_array)
         if tokens[0].type != TokenType.ASSIGNMENT:  # No assignment
             if not is_declare:
                 # Example: NOT_DECLARED = 1;

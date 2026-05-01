@@ -64,7 +64,6 @@ def preprocess(tokens: str | list[Token], relative_path: str = os.getcwd()) -> l
                 path = ''
                 if len(line) == 3 \
                        and line[2].type == TokenType.STRING:
-                    # #include "path/to/file"
                     path = os.path.join(relative_path, line[2].value)
                 elif len(line) == 5 \
                          and line[2].type == TokenType.COMPARE \

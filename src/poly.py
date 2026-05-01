@@ -44,6 +44,7 @@ def poly_copy_list(*, from_: Expression, to: Identifier, index: Identifier) -> S
 def poly_copy_list(*, from_, to, index):  # type: ignore
     is_array = isinstance(from_, ListIdentifier)
     if is_array != isinstance(to, ListIdentifier):
+        print(from_.dump(), to.dump(), index.dump())
         raise_error(Error('Poly', 'Cannot copy to the variable because the types are different'))
     if not is_array:
         return FunctionCall('data_setvariableto', [from_, to])
