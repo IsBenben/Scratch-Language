@@ -306,15 +306,7 @@ class Parser:
                     left = result
                 else:
                     raise_error(Error('Parse', f'Cannot use operator "{operator}" with two arrays'))
-            elif operator == '**':  # if not is_array:
-                # e^(ln(left)*right)
-                left = FunctionCall('operator_mathop', [String('e ^'),
-                           FunctionCall('operator_' + sign_to_english['*'], [
-                               FunctionCall('operator_mathop', [String('ln'), left]),
-                               right
-                           ])
-                       ])
-            else:
+            else:  # is not array
                 left = FunctionCall('operator_' + sign_to_english[operator], [left, right])
         return left
 
@@ -362,7 +354,20 @@ class Parser:
         return self._parse_expression(tokens, ['*', '/', '%'], self.parse_power_expression)
 
     def parse_power_expression(self, tokens: list[Token]) -> Expression:
-        return self._parse_expression(tokens, ['**'], self.parse_subscript_expression)
+        left = self.parse_subscript_expression(tokens)
+        if tokens[0].type == TokenType.OPERATOR and tokens[0].value == '**':
+            self.eat(tokens)
+            right = self.parse_power_expression(tokens)
+            if isinstance(left, ListIdentifier) or isinstance(right, ListIdentifier) :
+                raise_error(Error('Parse', f'Cannot use operator "**" with array(s)'))
+            # e^(ln(left)*right)
+            left = FunctionCall('operator_mathop', [String('e ^'),
+                FunctionCall('operator_' + sign_to_english['*'], [
+                    FunctionCall('operator_mathop', [String('ln'), left]),
+                    right
+                ])
+            ])
+        return left
     
     def parse_subscript_expression(self, tokens: list[Token]) -> Expression | NoReturn:
         left = self.parse_factor(tokens)
